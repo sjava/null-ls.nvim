@@ -12,7 +12,9 @@ local client, id
 
 local should_attach = function(bufnr)
     if api.nvim_buf_get_option(bufnr, "buftype") ~= "" or api.nvim_buf_get_name(bufnr) == "" then
-        return false
+        if api.nvim_buf_get_option(bufnr, "buftype") ~= "acwrite" or api.nvim_buf_get_name(bufnr) == "" then
+            return false
+        end
     end
 
     if c.get().should_attach and not c.get().should_attach(bufnr) then
