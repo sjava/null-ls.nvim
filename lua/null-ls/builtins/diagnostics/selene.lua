@@ -10,7 +10,7 @@ return h.make_builtin({
         description = "Command line tool designed to help write correct and idiomatic Lua code.",
     },
     method = DIAGNOSTICS,
-    filetypes = { "lua" },
+    filetypes = { "lua", "luau" },
     generator_opts = {
         command = "selene",
         args = { "--display-style", "quiet", "-" },
@@ -22,7 +22,7 @@ return h.make_builtin({
         on_output = h.diagnostics.from_pattern(
             [[(%d+):(%d+): (%w+)%[([%w_]+)%]: ([`]*([%w_]+)[`]*.*)]],
             { "row", "col", "severity", "code", "message", "_quote" },
-            { adapters = { h.diagnostics.adapters.end_col.from_quote }, offsets = { end_col = 1 } }
+            { adapters = { h.diagnostics.adapters.end_col.from_quote } }
         ),
     },
     factory = h.generator_factory,

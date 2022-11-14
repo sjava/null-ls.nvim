@@ -26,7 +26,10 @@ end
 local M = {}
 
 local capabilities = {
-    codeActionProvider = true,
+    codeActionProvider = {
+        -- TODO: investigate if we can use this
+        resolveProvider = false,
+    },
     executeCommandProvider = true,
     documentFormattingProvider = true,
     documentRangeFormattingProvider = true,
@@ -42,13 +45,15 @@ local capabilities = {
     textDocumentSync = {
         change = 1, -- prompt LSP client to send full document text on didOpen and didChange
         openClose = true,
-        save = true,
+        save = { includeText = true },
     },
     hoverProvider = true,
 }
 
 M.capabilities = capabilities
 
+-- 0.7 needs to monkey-patch rpc.start to create an in-memory RPC client
+-- on 0.8, we can create an RPC client by passing a callback cmd to vim.lsp.start_client
 M.setup = function()
     local rpc = require("vim.lsp.rpc")
     if rpc._null_ls_setup then
@@ -147,6 +152,13 @@ M.start = function(dispatchers)
     return {
         request = request,
         notify = notify,
+        is_closing = function()
+            return stopped
+        end,
+        terminate = function()
+            stopped = true
+        end,
+        -- TODO: remove unnecessary properties on 0.8 release
         pid = pid,
         handle = {
             is_closing = function()

@@ -1,5 +1,6 @@
 local stub = require("luassert.stub")
 local mock = require("luassert.mock")
+local spy = require("luassert.spy")
 
 local methods = require("null-ls.methods")
 local sources = require("null-ls.sources")
@@ -19,6 +20,7 @@ end
 describe("generators", function()
     local generators = require("null-ls.generators")
     local method = methods.internal.CODE_ACTION
+    local filter = stub.new()
 
     local mock_result = {
         title = "Mock action",
@@ -63,6 +65,13 @@ describe("generators", function()
             end,
         }
     end
+    local filter_generator = {
+        filetypes = { "lua" },
+        opts = { filter = filter },
+        fn = function()
+            return { mock_result }
+        end,
+    }
 
     local error_generator
     local mock_params, mock_opts
@@ -80,6 +89,7 @@ describe("generators", function()
 
     after_each(function()
         postprocess:clear()
+        filter:clear()
         sources._reset()
     end)
 
@@ -109,6 +119,27 @@ describe("generators", function()
             wait_for_results()
 
             assert.equals(vim.tbl_count(results), 0)
+        end)
+
+        it("should not copy params when < 2 generators", function()
+            local s = spy.on(vim, "deepcopy")
+
+            generators.run({ sync_generator }, mock_params, mock_opts, callback)
+            wait_for_results()
+
+            assert.spy(s).was_not_called()
+        end)
+
+        it("should copy params when >= 2 generators", function()
+            local s = spy.on(vim, "deepcopy")
+
+            generators.run({
+                sync_generator,
+                async_generator,
+            }, mock_params, mock_opts, callback)
+            wait_for_results()
+
+            assert.spy(s).was_called()
         end)
 
         it("should get result from sync generator", function()
@@ -164,6 +195,24 @@ describe("generators", function()
             wait_for_results()
 
             assert.stub(postprocess).was_called_with(mock_result, mock_params, sync_generator)
+        end)
+
+        it("should not remove results when filter returns true", function()
+            filter.returns(true)
+            generators.run({ filter_generator }, mock_params, mock_opts, callback)
+
+            wait_for_results()
+
+            assert.equals(vim.tbl_count(results), 1)
+        end)
+
+        it("should remove results when filter returns false", function()
+            filter.returns(false)
+            generators.run({ filter_generator }, mock_params, mock_opts, callback)
+
+            wait_for_results()
+
+            assert.equals(vim.tbl_count(results), 0)
         end)
 
         it("should call after_each with results, params, and generator", function()

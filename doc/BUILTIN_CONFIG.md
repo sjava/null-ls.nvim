@@ -19,20 +19,22 @@ null-ls exposes built-ins on `null_ls.builtins`, which contains the following
 groups of sources:
 
 ```lua
+local null_ls = require("null-ls")
+
 -- code action sources
-null_ls.builtins.code_actions
+local code_actions = null_ls.builtins.code_actions
 
 -- diagnostic sources
-null_ls.builtins.diagnostics
+local diagnostics = null_ls.builtins.diagnostics
 
 -- formatting sources
-null_ls.builtins.formatting
+local formatting = null_ls.builtins.formatting
 
 -- hover sources
-null_ls.builtins.hover
+local hover = null_ls.builtins.hover
 
 -- completion sources
-null_ls.builtins.completion
+local completion = null_ls.builtins.completion
 ```
 
 You can then register sources by passing a `sources` list into your `setup`
@@ -115,12 +117,13 @@ To add more arguments to a source's defaults, use `extra_args`:
 ```lua
 local sources = {
     null_ls.builtins.formatting.shfmt.with({
-        extra_args = { "-i", "2", "-ci" }
-      })
-  }
+        extra_args = { "-i", "2", "-ci" },
+    }),
+}
 ```
 
-You can also override a source's arguments entirely using `with({ args = your_args })`.
+You can also override a source's arguments entirely using
+`with({ args = your_args })`.
 
 Both `args` and `extra_args` can also be functions that accept a single
 argument, `params`, which is an object containing information about editor
@@ -145,15 +148,27 @@ local sources = {
 ### Environment Variables
 
 You can inject environment variables to the process via utilizing the `env`
-option. This option should be in the form of a dictionary. This will extend the
-operating system variables.
+option. This option can be in the form of a dictionary. It can also, just like
+`args` and `extra_args`, take a function receiving a `params` object.
 
 ```lua
+-- Using a dictionary:
+
 local sources = {
     null_ls.builtins.formatting.prettierd.with({
-          env = {
-            PRETTIERD_DEFAULT_CONFIG = vim.fn.expand "~/.config/nvim/utils/linter-config/.prettierrc.json",
-          }
+        env = {
+            PRETTIERD_DEFAULT_CONFIG = vim.fn.expand("~/.config/nvim/utils/linter-config/.prettierrc.json"),
+        },
+    }),
+}
+
+-- Using a function:
+
+local sources = {
+    null_ls.builtins.diagnostics.pylint.with({
+        env = function(params)
+            return { PYTHONPATH = params.root }
+        end,
     }),
 }
 ```
@@ -171,6 +186,46 @@ local sources = {
 }
 ```
 
+### Filtering
+
+You can filter generator results using the `filter` option. The option should be
+a function that returns `true` to keep the result, and `false` or `nil` to
+ignore it.
+
+```lua
+local sources = {
+    null_ls.builtins.diagnostics.eslint_d.with({
+        -- ignore prettier warnings from eslint-plugin-prettier
+        filter = function(diagnostic)
+            return diagnostic.code ~= "prettier/prettier"
+        end,
+    }),
+}
+```
+
+### Diagnostic config
+
+You can configure how Neovim displays source diagnostics by setting
+`diagnostic_config`:
+
+```lua
+local sources = {
+    null_ls.builtins.diagnostics.shellcheck.with({
+        diagnostic_config = {
+            -- see :help vim.diagnostic.config()
+            underline = true,
+            virtual_text = false,
+            signs = true,
+            update_in_insert = false,
+            severity_sort = true,
+        },
+    }),
+}
+```
+
+- Specifying `diagnostic_config` for a built-in will override your global
+  `diagnostic_config` for that source.
+
 ### Diagnostics format
 
 For diagnostics sources, you can change the format of diagnostic messages by
@@ -180,7 +235,7 @@ setting `diagnostics_format`:
 local sources = {
     -- will show code and source name
     null_ls.builtins.diagnostics.shellcheck.with({
-        diagnostics_format = "[#{c}] #{m} (#{s})"
+        diagnostics_format = "[#{c}] #{m} (#{s})",
     }),
 }
 ```
@@ -206,8 +261,7 @@ diagnostic.
 local sources = {
     null_ls.builtins.diagnostics.write_good.with({
         diagnostics_postprocess = function(diagnostic)
-            diagnostic.severity = diagnostic.message:find("really")
-                and vim.diagnostic.severity["ERROR"]
+            diagnostic.severity = diagnostic.message:find("really") and vim.diagnostic.severity["ERROR"]
                 or vim.diagnostic.severity["WARN"]
         end,
     }),
@@ -248,7 +302,7 @@ local sources = {
         cwd = function(params)
             -- falls back to root if return value is nil
             return params.root:match("my-special-project") and "my-special-cwd"
-        end
+        end,
     }),
 }
 ```
@@ -263,7 +317,7 @@ set a different `timeout`:
 local sources = {
     null_ls.builtins.formatting.prettier.with({
         -- milliseconds
-        timeout = 10000
+        timeout = 10000,
     }),
 }
 ```
@@ -271,21 +325,30 @@ local sources = {
 Specifying a timeout with a value less than zero will prevent the command from
 ever timing out.
 
-### Running in place
+### Temp file sources
 
-Some builtins write the buffer to a temp file before being executed. This can be
-turned off by setting `to_temp_file` to `false`:
+Some built-in sources write the buffer's content to a temp file before command
+execution and / or read from a temp file after execution, as a workaround for
+commands that don't support `stdio`. To maximize compatibility, null-ls defaults
+to creating temp files in the same directory as the parent file.
+
+Under normal circumstances, this will work seamlessly, but if you run into
+issues with file watchers / other integrations, you can override the directory
+to `/tmp` (or another appropriate directory) using the `temp_dir` option:
 
 ```lua
 local sources = {
     null_ls.builtins.formatting.phpstan.with({
-        to_temp_file = false
+        temp_dir = "/tmp",
     }),
 }
 ```
 
-If overriding this it is recommended to switch diagnostics to
-[run on save](#diagnostics-on-save).
+**Note**: some null-ls built-in sources expect temp files to exist within a
+project for context and so will not work if this option changes.
+
+If you want to override this globally, you can change the `temp_dir` option in
+[CONFIG](CONFIG.md).
 
 ## Using local executables
 
@@ -309,44 +372,19 @@ local sources = {
 To _only_ use a local executable without falling back, use `only_local`, which
 accepts the same options.
 
-By default, these options will also set the `cwd` of the spawned process to the
-parent directory of the local executable (if found). You can override this by
-manually setting `cwd`, as described above.
-
 You can also choose to override a source's command and specify an absolute path
 if the command is not available on your `$PATH`:
 
 ```lua
 local sources = {
     null_ls.builtins.formatting.prettier.with({
-        command = "/path/to/prettier"
+        command = "/path/to/prettier",
     }),
 }
 ```
 
 Another solution is to use the `dynamic_command` option, as described in
 [HELPERS](./HELPERS.md). Note that this option can affect performance.
-
-null-ls includes several command resolvers to handle common cases and cache
-results to prevent repeated lookups.
-
-For example, the following looks for `prettier` in `node_modules/.bin`, then
-tries to find a local Yarn Plug'n'Play install, then tries to find a global
-`prettier` executable:
-
-```lua
-local command_resolver = require("null-ls.helpers.command_resolver")
-
-local sources = {
-    null_ls.builtins.formatting.prettier.with({
-        dynamic_command = function(params)
-            return command_resolver.from_node_modules(params)
-                or command_resolver.from_yarn_pnp(params)
-                or vim.fn.executable(params.command) == 1 and params.command
-        end,
-    }),
-}
-```
 
 ## Conditional sources
 

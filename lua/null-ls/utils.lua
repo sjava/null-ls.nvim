@@ -83,13 +83,9 @@ end
 
 --- checks if a given command is executable
 ---@param cmd string? command to check
----@return boolean, string is_executable, string|nil error_message
+---@return boolean
 M.is_executable = function(cmd)
-    if cmd and vim.fn.executable(cmd) == 1 then
-        return true
-    end
-
-    return false, string.format("command %s is not executable (make sure it's installed and on your $PATH)", cmd)
+    return cmd and vim.fn.executable(cmd) == 1 or false
 end
 
 ---@alias NullLsRange table<"'row'"|"'col'"|"'end_row'"|"'end_col'", number>
@@ -142,6 +138,8 @@ M.range = {
 ---@field ft string
 ---@field range NullLsRange|nil converted LSP range
 ---@field word_to_complete string|nil
+---@field command string|nil set by generator_factory
+---@field root string|nil set by generator_factory
 
 ---@param original_params table original LSP params
 ---@param method string internal null-ls method
@@ -182,6 +180,7 @@ end
 ---@class ConditionalUtils
 ---@field has_file fun(patterns: ...): boolean checks if file exists
 ---@field root_has_file fun(patterns: ...): boolean checks if file exists at root level
+---@field root_has_file_matches fun(pattern: string): boolean checks if pattern matches a file at root level
 ---@field root_matches fun(pattern: string): boolean checks if root matches pattern
 
 --- creates a table of conditional utils based on the current root directory
@@ -209,6 +208,20 @@ M.make_conditional_utils = function()
             end
             return false
         end,
+        root_has_file_matches = function(pattern)
+            local handle = vim.loop.fs_scandir(root)
+            local entry = vim.loop.fs_scandir_next(handle)
+
+            while entry do
+                if entry:match(pattern) then
+                    return true
+                end
+
+                entry = vim.loop.fs_scandir_next(handle)
+            end
+
+            return false
+        end,
         root_matches = function(pattern)
             return root:find(pattern) ~= nil
         end,
@@ -217,7 +230,7 @@ end
 
 M.buf = {
     --- returns buffer content as string or table
-    ---@param bufnr number
+    ---@param bufnr number|nil
     ---@param to_string boolean
     ---@return string|table content
     content = function(bufnr, to_string)
@@ -318,7 +331,7 @@ end
 ---@field is_windows fun(): boolean
 ---@field exists fun(filename: string): boolean
 ---@field dirname fun(path: string): string|nil
----@field join fun(paths: ...): string
+---@field join function(paths: ...): string
 ---@field traverse_parents fun(path: string, cb: fun(dir: string, path: string): boolean): string|nil dir, string|nil path
 ---@field iterate_parents fun(path: string): fun(_, v: string): string|nil v, string|nil path
 
@@ -361,10 +374,8 @@ M.path = (function()
     end
 
     local path_join = function(...)
-        local result = table.concat(vim.tbl_flatten({ ... }), path_separator):gsub(
-            path_separator .. "+",
-            path_separator
-        )
+        local result =
+            table.concat(vim.tbl_flatten({ ... }), path_separator):gsub(path_separator .. "+", path_separator)
         return result
     end
 

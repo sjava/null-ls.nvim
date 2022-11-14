@@ -11,7 +11,7 @@ local tu = require("null-ls.test-utils")
 local lsp = vim.lsp
 local api = vim.api
 
-main.setup({ log = { enable = false } })
+main.setup({ log_level = "off" })
 vim.cmd("autocmd BufEnter *.txt set filetype=text")
 
 local get_code_actions = function()
@@ -23,9 +23,33 @@ local get_code_actions = function()
     )
 end
 
+-- borrowed from Neovim's implementation until we can use vim.region()
+local range_formatting = function()
+    local start = vim.fn.getpos("v")
+    local end_ = vim.fn.getpos(".")
+    local start_row = start[2]
+    local start_col = start[3]
+    local end_row = end_[2]
+    local end_col = end_[3]
+
+    if start_row == end_row and end_col < start_col then
+        end_col, start_col = start_col, end_col
+    elseif end_row < start_row then
+        start_row, end_row = end_row, start_row
+        start_col, end_col = end_col, start_col
+    end
+    local range = {
+        ["start"] = { start_row, start_col - 1 },
+        ["end"] = { end_row, end_col - 1 },
+    }
+
+    lsp.buf.format({ range = range })
+end
+
 describe("e2e", function()
     after_each(function()
         vim.cmd("bufdo! bdelete!")
+        vim.diagnostic.reset()
 
         c.reset()
         s.reset()
@@ -59,7 +83,7 @@ describe("e2e", function()
         it("should apply code action", function()
             vim.lsp.buf.execute_command(null_ls_action)
 
-            assert.equals(u.buf.content(nil, true), '--print("I am a test file!")\n')
+            assert.equals(u.buf.content(nil, true), '-- print("I am a test file!")\n')
         end)
 
         it("should adapt code action based on params", function()
@@ -168,6 +192,7 @@ describe("e2e", function()
 
         describe("multiple-file diagnostics", function()
             it("should set diagnostics for multiple files", function()
+                vim.diagnostic.reset()
                 sources.reset()
                 sources.register(builtins._test.mock_multiple_file_diagnostics)
                 vim.cmd("e")
@@ -193,6 +218,7 @@ describe("e2e", function()
         end)
 
         it("should format diagnostics with source-specific diagnostics_format", function()
+            vim.diagnostic.reset()
             sources.reset()
             sources.register(builtins.diagnostics.write_good.with({ diagnostics_format = "#{m} (#{s})" }))
             vim.cmd("e")
@@ -216,6 +242,31 @@ describe("e2e", function()
             local write_good_diagnostic = vim.diagnostic.get(0)[1]
 
             assert.equals(write_good_diagnostic.message, "I have been postprocessed!")
+        end)
+
+        it("should configure source diagnostics display", function()
+            local diagnostic_config = {
+                underline = true,
+                virtual_text = true,
+                signs = true,
+                update_in_insert = true,
+                severity_sort = true,
+            }
+            sources.reset()
+            sources.register(builtins.diagnostics.write_good.with({
+                diagnostic_config = diagnostic_config,
+            }))
+
+            -- need to generate diagnostics to configure namespace on first display
+            vim.cmd("e")
+            tu.wait_for_real_source()
+
+            local source = sources.get_all()[1]
+            assert.truthy(source)
+            assert.equals(source.name, "write_good")
+            local namespace = require("null-ls.diagnostics").get_namespace(source.id)
+            assert.truthy(namespace)
+            assert.same(vim.diagnostic.config(nil, namespace), diagnostic_config)
         end)
     end)
 
@@ -241,7 +292,7 @@ describe("e2e", function()
         end)
 
         it("should format file", function()
-            lsp.buf.formatting()
+            lsp.buf.format({ async = true })
             wait_for_prettier()
 
             assert.equals(u.buf.content(nil, true), formatted)
@@ -264,7 +315,7 @@ describe("e2e", function()
             end)
 
             it("should format file", function()
-                lsp.buf.formatting()
+                lsp.buf.format({ async = true })
                 wait_for_prettier()
 
                 assert.equals(u.buf.content(nil, true), formatted)
@@ -292,9 +343,9 @@ describe("e2e", function()
         end)
 
         it("should format specified range", function()
-            vim.cmd("normal ggV")
+            vim.cmd("silent normal ggV")
 
-            lsp.buf.range_formatting()
+            range_formatting()
             wait_for_prettier()
 
             assert.equals(u.buf.content(nil, true), formatted)
@@ -307,48 +358,36 @@ describe("e2e", function()
             return
         end
 
+        local autocmd
         before_each(function()
-            api.nvim_exec(
-                [[
-            augroup NullLsTesting
-                autocmd!
-                autocmd BufEnter *.tl set filetype=teal
-            augroup END
-            ]],
-                false
-            )
+            autocmd = vim.api.nvim_create_autocmd("BufEnter", {
+                pattern = "*.tl",
+                command = "set filetype=teal",
+            })
             sources.register(builtins.diagnostics.teal)
 
             tu.edit_test_file("test-file.tl")
             tu.wait_for_real_source()
         end)
         after_each(function()
-            api.nvim_exec(
-                [[
-            augroup NullLsTesting
-                autocmd!
-            augroup END
-            ]],
-                false
-            )
-            vim.cmd("augroup! NullLsTesting")
+            vim.api.nvim_del_autocmd(autocmd)
         end)
 
         it("should handle source that uses temp file", function()
             -- replace - with .., which will mess up the return type
-            api.nvim_buf_set_text(api.nvim_get_current_buf(), 0, 52, 0, 53, { ".." })
+            api.nvim_buf_set_text(api.nvim_get_current_buf(), 0, 58, 0, 59, { ".." })
             tu.wait_for_real_source()
 
             local buf_diagnostics = vim.diagnostic.get(0)
             assert.equals(vim.tbl_count(buf_diagnostics), 1)
 
-            local tl_check_diagnostic = buf_diagnostics[1]
-            assert.equals(tl_check_diagnostic.message, "in return value: got string, expected number")
-            assert.equals(tl_check_diagnostic.source, "tl check")
-            assert.equals(tl_check_diagnostic.lnum, 0)
-            assert.equals(tl_check_diagnostic.end_lnum, 1)
-            assert.equals(tl_check_diagnostic.col, 52)
-            assert.equals(tl_check_diagnostic.end_col, 0)
+            local teal_diagnostic = buf_diagnostics[1]
+            assert.equals(teal_diagnostic.message, "in return value: got string, expected number")
+            assert.equals(teal_diagnostic.source, "teal")
+            assert.equals(teal_diagnostic.lnum, 0)
+            assert.equals(teal_diagnostic.end_lnum, 1)
+            assert.equals(teal_diagnostic.col, 58)
+            assert.equals(teal_diagnostic.end_col, 0)
         end)
     end)
 
@@ -409,7 +448,6 @@ describe("e2e", function()
 
                 assert.equals(vim.tbl_count(actions[1].result), 1)
                 assert.equals(copy._opts._last_command, tu.test_dir .. "/files/cat")
-                assert.equals(copy._opts._last_cwd, tu.test_dir .. "/files")
             end)
 
             it("should fall back to global executable when local is unavailable", function()
@@ -445,7 +483,6 @@ describe("e2e", function()
 
                 assert.equals(vim.tbl_count(actions[1].result), 1)
                 assert.equals(copy._opts._last_command, tu.test_dir .. "/files/cat")
-                assert.equals(copy._opts._last_cwd, tu.test_dir .. "/files")
             end)
 
             it("should not run when local executable is unavailable", function()
@@ -462,7 +499,6 @@ describe("e2e", function()
 
                 assert.equals(vim.tbl_count(actions[1].result), 0)
                 assert.equals(copy._opts.last_command, nil)
-                assert.equals(copy._opts._last_cwd, nil)
             end)
         end)
     end)
@@ -474,7 +510,7 @@ describe("e2e", function()
             tu.edit_test_file("test-file.txt")
             tu.wait()
 
-            lsp.buf.formatting()
+            lsp.buf.format({ async = true })
             tu.wait_for_mock_source(2)
 
             assert.equals(u.buf.content(nil, true), "sequential\n")
@@ -485,7 +521,7 @@ describe("e2e", function()
             sources.register(builtins._test.second_formatter)
             tu.edit_test_file("test-file.txt")
             tu.wait()
-            lsp.buf.formatting()
+            lsp.buf.format({ async = true })
             tu.wait_for_mock_source(2)
 
             vim.cmd("silent normal u")
@@ -499,7 +535,7 @@ describe("e2e", function()
             tu.edit_test_file("test-file.txt")
             tu.wait()
 
-            lsp.buf.formatting()
+            lsp.buf.format({ async = true })
             tu.wait_for_mock_source(2)
 
             assert.equals(u.buf.content(nil, true), "first\n")
@@ -516,7 +552,7 @@ describe("e2e", function()
             tu.edit_test_file("test-file.txt")
             tu.wait()
 
-            lsp.buf.formatting()
+            lsp.buf.format({ async = true })
             tu.wait_for_mock_source()
 
             assert.equals(#sources.get({}), 1)
@@ -532,11 +568,7 @@ describe("e2e", function()
             tu.edit_test_file("test-file.txt")
             tu.wait()
 
-            lsp.buf.formatting()
-            tu.wait_for_mock_source()
-
             assert.equals(#sources.get({}), 0)
-            assert.equals(u.buf.content(nil, true), "intentionally left blank\n")
         end)
 
         it("should skip source that fails runtime condition", function()
@@ -549,7 +581,7 @@ describe("e2e", function()
             tu.edit_test_file("test-file.txt")
             tu.wait()
 
-            lsp.buf.formatting()
+            lsp.buf.format({ async = true })
             tu.wait_for_mock_source(2)
 
             assert.equals(#sources.get({}), 2)
@@ -571,7 +603,7 @@ describe("e2e", function()
         end)
 
         it("should use client handler", function()
-            lsp.buf.formatting()
+            lsp.buf.format({ async = true })
             tu.wait_for_mock_source()
 
             assert.stub(mock_handler).was_called()

@@ -25,6 +25,9 @@ return h.make_builtin({
                 severity = 1,
             },
         }),
+        runtime_condition = h.cache.by_bufnr(function(params)
+            return params.bufname:find("%.github[\\/]workflows") ~= nil
+        end),
     },
     factory = h.generator_factory,
 })

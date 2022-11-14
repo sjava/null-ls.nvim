@@ -119,22 +119,20 @@ describe("utils", function()
             assert.stub(executable).was_called_with("mock-command")
         end)
 
-        it("should return true and nil if result is > 0", function()
+        it("should return true if result is > 0", function()
             executable.returns(1)
 
-            local is_executable, err_msg = u.is_executable("mock-command")
+            local is_executable = u.is_executable("mock-command")
 
             assert.truthy(is_executable)
-            assert.falsy(err_msg)
         end)
 
-        it("should return false and error message if result is 0", function()
+        it("should return false if result is 0", function()
             executable.returns(0)
 
-            local is_executable, err_msg = u.is_executable("mock-command")
+            local is_executable = u.is_executable("mock-command")
 
             assert.falsy(is_executable)
-            assert.truthy(err_msg:find("is not executable"))
         end)
     end)
 
@@ -326,6 +324,7 @@ describe("utils", function()
         it("should return object containing utils", function()
             assert.truthy(type(utils.has_file) == "function")
             assert.truthy(type(utils.root_has_file) == "function")
+            assert.truthy(type(utils.root_has_file_matches) == "function")
             assert.truthy(type(utils.root_matches) == "function")
         end)
 
@@ -362,6 +361,16 @@ describe("utils", function()
 
             it("should return false if file does not exist at root", function()
                 assert.falsy(utils.root_has_file("bad-file"))
+            end)
+        end)
+
+        describe("root_has_file_matches", function()
+            it("should return true if some file exists at root", function()
+                assert.truthy(utils.root_has_file_matches(".?stylua.toml"))
+            end)
+
+            it("should return false if some file not exists at root", function()
+                assert.falsy(utils.root_has_file_matches("bad-file"))
             end)
         end)
 

@@ -1,6 +1,7 @@
 local h = require("null-ls.helpers")
 local cmd_resolver = require("null-ls.helpers.command_resolver")
 local methods = require("null-ls.methods")
+local u = require("null-ls.utils")
 
 local CODE_ACTION = methods.internal.CODE_ACTION
 
@@ -165,7 +166,21 @@ return h.make_builtin({
             params.messages = output[1].messages
             return code_action_handler(params)
         end,
-        dynamic_command = cmd_resolver.from_node_modules,
+        dynamic_command = cmd_resolver.from_node_modules(),
+        cwd = h.cache.by_bufnr(function(params)
+            return u.root_pattern(
+                -- https://eslint.org/docs/latest/user-guide/configuring/configuration-files-new
+                "eslint.config.js",
+                -- https://eslint.org/docs/user-guide/configuring/configuration-files#configuration-file-formats
+                ".eslintrc",
+                ".eslintrc.js",
+                ".eslintrc.cjs",
+                ".eslintrc.yaml",
+                ".eslintrc.yml",
+                ".eslintrc.json",
+                "package.json"
+            )(params.bufname)
+        end),
     },
     factory = h.generator_factory,
 })

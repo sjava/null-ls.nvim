@@ -2,7 +2,7 @@ local log = require("null-ls.logger")
 local u = require("null-ls.utils")
 
 local uv = vim.loop
-local wrap = vim.schedule_wrap
+local wrap = vim.schedule_wrap --[[@as fun(cb: any): function]]
 
 local close_handle = function(handle)
     if handle and not handle:is_closing() then
@@ -48,7 +48,8 @@ M.spawn = function(cmd, args, opts)
     local handler, input, check_exit_code, timeout, on_stdout_end, env =
         opts.handler, opts.input, opts.check_exit_code, opts.timeout, opts.on_stdout_end, opts.env
 
-    local output, error_output = "", ""
+    local output, error_output
+    output, error_output = "", ""
     local handle_stdout = function(err, chunk)
         if err then
             on_error("stdout", err)
@@ -96,7 +97,7 @@ M.spawn = function(cmd, args, opts)
     local stderr = uv.new_pipe(false)
     local stdio = { stdin, stdout, stderr }
 
-    local handle
+    local handle, pid
     local on_close = function(code)
         if not handle then
             return
@@ -143,15 +144,31 @@ M.spawn = function(cmd, args, opts)
         cmd, args = cmd[1], concat_args
     end
 
-    handle = uv.spawn(
-        vim.fn.exepath(cmd),
-        { args = args, env = parsed_env, stdio = stdio, cwd = opts.cwd or vim.fn.getcwd() },
+    local exepath = vim.fn.exepath(cmd)
+    local spawn_params = {
+        args = args,
+        env = parsed_env,
+        stdio = stdio,
+        cwd = opts.cwd or vim.loop.cwd(),
+    }
+
+    handle, pid = uv.spawn(
+        exepath ~= "" and exepath or cmd, -- if we can't resolve exepath, try spawning the command as-is
+        spawn_params,
         on_close
     )
 
+    if not handle then
+        local message = pid:match("ENOENT")
+                and string.format("command %s is not executable (make sure it's installed and on your $PATH)", cmd)
+            or string.format("failed to spawn command %s: %s", cmd, pid)
+        error(message)
+    end
+
     if timeout and timeout > 0 then
         timer = M.timer(timeout, nil, true, function()
-            log:debug(string.format("command [%s] timed out after %s ms", cmd, timeout))
+            log:debug(string.format("command %s timed out after %s ms", cmd, timeout))
+
             on_close(TIMEOUT_EXIT_CODE)
             timer.stop(true)
         end)
@@ -203,38 +220,67 @@ M.timer = function(timeout, interval, should_start, callback)
     }
 end
 
-M.temp_file = function(content, extension)
-    local tmp_dir = u.path.is_windows and vim.fn.getenv("TEMP") or "/tmp"
+--- creates a temp file at a given file's location
+---@param content string
+---@param bufname string
+---@param dirname string|nil
+---@return string temp_path, fun() cleanup
+M.temp_file = function(content, bufname, dirname)
+    dirname = dirname or vim.fn.fnamemodify(bufname, ":h")
+    local base_name = vim.fn.fnamemodify(bufname, ":t")
 
-    local fd, tmp_path
-    if uv.fs_mkstemp then
-        -- prefer fs_mkstemp, since we can modify the directory
-        fd, tmp_path = uv.fs_mkstemp(u.path.join(tmp_dir, "null-ls_XXXXXX"))
-    else
-        -- fall back to os.tmpname, which is Unix-only
-        tmp_path = os.tmpname()
+    local filename = string.format(".null-ls_%d_%s", math.random(100000, 999999), base_name)
+    local temp_path = u.path.join(dirname, filename)
+
+    local fd, err = uv.fs_open(temp_path, "w", 384)
+    if not fd then
+        error("failed to create temp file: " .. err)
     end
 
-    -- close handle if open and rename temp file to add extension
-    if extension then
-        if fd then
-            uv.fs_close(fd)
-            fd = nil
-        end
-
-        local path_with_ext = tmp_path .. "." .. extension
-        uv.fs_rename(tmp_path, path_with_ext)
-        tmp_path = path_with_ext
-    end
-
-    -- if not open, open with (0700) permissions
-    fd = fd or uv.fs_open(tmp_path, "w", 384)
     uv.fs_write(fd, content, -1)
     uv.fs_close(fd)
 
-    return tmp_path, function()
-        uv.fs_unlink(tmp_path)
+    local autocmd_id
+    local cleanup = function()
+        if not temp_path then
+            return
+        end
+
+        uv.fs_unlink(temp_path)
+        temp_path = nil
+
+        if autocmd_id then
+            vim.schedule(function()
+                vim.api.nvim_del_autocmd(autocmd_id)
+            end)
+        end
     end
+
+    -- make sure to run cleanup on exit
+    autocmd_id = vim.api.nvim_create_autocmd("VimLeavePre", {
+        callback = cleanup,
+    })
+
+    return temp_path, cleanup
+end
+
+--- read from file at path
+---@param path string
+---@return string content
+M.read_file = function(path)
+    local content
+    local ok, err = pcall(function()
+        local fd = uv.fs_open(path, "r", 438)
+        local stat = uv.fs_fstat(fd)
+        content = uv.fs_read(fd, stat.size, 0)
+        uv.fs_close(fd)
+    end)
+
+    if not ok then
+        log:error(string.format("failed to read from file at %s: %s ", path, err))
+    end
+
+    return content or ""
 end
 
 ---@param path string

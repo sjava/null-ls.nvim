@@ -18,7 +18,7 @@ local get_content = function(params)
     end
 
     -- otherwise, get content directly
-    return u.buf.content(params.bufnr, true)
+    return u.buf.content(params.bufnr, true) --[[@as string]]
 end
 
 local parse_args = function(args, params)
@@ -101,7 +101,7 @@ local line_output_wrapper = function(params, done, on_output)
 end
 
 return function(opts)
-    local command, args, env, on_output, format, ignore_stderr, from_stderr, to_stdin, check_exit_code, timeout, to_temp_file, from_temp_file, use_cache, runtime_condition, cwd, dynamic_command, multiple_files =
+    local command, args, env, on_output, format, ignore_stderr, from_stderr, to_stdin, check_exit_code, timeout, to_temp_file, from_temp_file, use_cache, runtime_condition, cwd, dynamic_command, multiple_files, temp_dir =
         opts.command,
         opts.args,
         opts.env,
@@ -118,7 +118,8 @@ return function(opts)
         opts.runtime_condition,
         opts.cwd,
         opts.dynamic_command,
-        opts.multiple_files
+        opts.multiple_files,
+        opts.temp_dir
 
     if type(check_exit_code) == "table" then
         local codes = check_exit_code
@@ -127,21 +128,15 @@ return function(opts)
         end
     end
 
+    local is_nil_table_or_func = function(v)
+        return v == nil or vim.tbl_contains({ "function", "table" }, type(v))
+    end
+
     local _validated
     local validate_opts = function(params)
         local validated, validation_err = pcall(vim.validate, {
-            args = {
-                args,
-                function(v)
-                    return v == nil or vim.tbl_contains({ "function", "table" }, type(v))
-                end,
-                "function or table",
-            },
-            env = {
-                env,
-                "table",
-                true,
-            },
+            args = { args, is_nil_table_or_func, "function or table" },
+            env = { env, is_nil_table_or_func, "function or table" },
             on_output = { on_output, "function" },
             format = {
                 format,
@@ -172,14 +167,6 @@ return function(opts)
             command = command(params)
             -- prevent issues displaying / attempting to serialize generator.opts.command
             opts.command = command
-        end
-
-        if not dynamic_command then
-            local is_executable, err_msg = u.is_executable(command)
-            if not is_executable then
-                log:error(err_msg)
-                return false
-            end
         end
 
         return true
@@ -233,6 +220,8 @@ return function(opts)
                     end
 
                     params.output = params.output or output
+                    opts._last_output = output or ""
+
                     if use_cache then
                         s.set_cache(params.bufnr, command, output)
                     end
@@ -281,25 +270,22 @@ return function(opts)
             local resolved_command
             if dynamic_command then
                 resolved_command = dynamic_command(params)
-                log:debug(
-                    string.format(
-                        "Using dynamic command for [%s], got: %s",
-                        params.command,
-                        vim.inspect(resolved_command)
-                    )
-                )
             else
                 resolved_command = command
             end
 
             -- if dynamic_command returns nil, don't fall back to command
             if not resolved_command then
-                log:debug(string.format("unable to resolve command [%s]", command))
+                log:debug(string.format("unable to resolve command %s; aborting", command))
                 return done()
             end
 
             local resolved_cwd = cwd and cwd(params) or root
             params.cwd = resolved_cwd
+
+            if type(env) == "function" then
+                env = env(params)
+            end
 
             local spawn_opts = {
                 cwd = resolved_cwd,
@@ -311,23 +297,13 @@ return function(opts)
             }
 
             if to_temp_file then
-                local filename = vim.fn.fnamemodify(params.bufname, ":e")
-                local temp_path, cleanup = loop.temp_file(get_content(params), filename)
+                local content = get_content(params)
+                local temp_path, cleanup = loop.temp_file(content, params.bufname, temp_dir or c.get().temp_dir)
 
                 spawn_opts.on_stdout_end = function()
                     if from_temp_file then
-                        -- wrap to make sure temp file is always cleaned up
-                        local ok, err = pcall(function()
-                            local fd = vim.loop.fs_open(temp_path, "r", 438)
-                            local stat = vim.loop.fs_fstat(fd)
-                            params.output = vim.loop.fs_read(fd, stat.size, 0)
-                            vim.loop.fs_close(fd)
-                        end)
-                        if not ok then
-                            log:warn("failed to read from temp file: " .. err)
-                        end
+                        params.output = loop.read_file(temp_path)
                     end
-
                     cleanup()
                 end
                 params.temp_path = temp_path

@@ -2,12 +2,19 @@
 
 ## General
 
-- Before committing, please format Lua files with
-  [StyLua](https://github.com/JohnnyMorganz/StyLua) and Markdown files with
-  [Prettier](https://github.com/prettier/prettier). Both are available as
-  null-ls built-ins. Optionally, [Pre-Commit](https://pre-commit.com/index.html#install)
-  hooks can be installed with `make install-hooks` to locally enforce checks
-  on commit.
+- Before committing, please go through the following steps:
+
+1. Lint Lua files with [selene](https://github.com/Kampfkarren/selene)
+2. Format Lua files with [StyLua](https://github.com/JohnnyMorganz/StyLua)
+3. If you've updated documentation, format Markdown files with
+   [Prettier](https://github.com/prettier/prettier)
+
+   All are available as null-ls built-ins. Failing to lint and format files will
+   cause CI failures, which will prevent your PR from getting merged.
+
+   Optionally, you can install
+   [Pre-Commit](https://pre-commit.com/index.html#install) hooks by cloning the
+   project and running `make install-hooks` to locally enforce checks on commit.
 
 - Use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
   style for your commits.
@@ -23,6 +30,10 @@
 - We use Plenary's test suite, which uses a stripped-down version of
   [busted](https://github.com/Olivine-Labs/busted). If you're unsure how to
   write tests for your PR, please let us know and we can help.
+
+- To format Lua code blocks in our Markdown documentation, we recommend
+  [cbfmt](https://github.com/lukas-reineke/cbfmt), which is available as a
+  null-ls built-in.
 
 ## Contributing built-ins
 
@@ -93,11 +104,11 @@ local diagnostic = {
 - Do not include the source's name or code in the message.
 
 - If at all possible, please add one or more tests to check whether your source
-  produces the correct output given an actual raw diagnostic. See [the
-  existing tests](../test/spec/builtins/diagnostics_spec.lua) for examples.
+  produces the correct output given an actual raw diagnostic. See
+  [the existing tests](../test/spec/builtins/diagnostics_spec.lua) for examples.
 
-- If your source can produce project-level diagnostics (i.e. diagnostics for more
-  than one file at a time), use the `multiple_files` option described in
+- If your source can produce project-level diagnostics (i.e. diagnostics for
+  more than one file at a time), use the `multiple_files` option described in
   [HELPERS](./HELPERS.md).
 
   - Specify that your source supports project diagnostics in its documentation.

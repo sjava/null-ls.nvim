@@ -7,7 +7,31 @@ return h.make_builtin({
     name = "pylint",
     meta = {
         url = "https://github.com/PyCQA/pylint",
-        description = "Pylint is a Python static code analysis tool which looks for programming errors, helps enforcing a coding standard, sniffs for code smells and offers simple refactoring suggestions.",
+        description = [[
+Pylint is a Python static code analysis tool which looks for programming
+errors, helps enforcing a coding standard, sniffs for code smells and offers
+simple refactoring suggestions.
+
+If you prefer to use the older "message-id" names for these errors (i.e.
+"W0612" instead of "unused-variable"), you can customize pylint's resulting
+diagnostics like so:
+
+```lua
+null_ls = require("null-ls")
+null_ls.setup({
+  sources = {
+    null_ls.builtins.diagnostics.pylint.with({
+      diagnostics_postprocess = function(diagnostic)
+        diagnostic.code = diagnostic.message_id
+      end,
+    }),
+    null_ls.builtins.formatting.isort,
+    null_ls.builtins.formatting.black,
+    ...,
+  },
+})
+```
+]],
     },
     method = DIAGNOSTICS,
     filetypes = { "python" },
@@ -23,9 +47,11 @@ return h.make_builtin({
             attributes = {
                 row = "line",
                 col = "column",
-                code = "message-id",
+                code = "symbol",
                 severity = "type",
                 message = "message",
+                message_id = "message-id",
+                symbol = "symbol",
                 source = "pylint",
             },
             severities = {
@@ -34,6 +60,7 @@ return h.make_builtin({
             },
             offsets = {
                 col = 1,
+                end_col = 1,
             },
         }),
     },

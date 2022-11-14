@@ -6,6 +6,15 @@ return helpers.make_builtin({
     meta = {
         url = "https://github.com/sqlfluff/sqlfluff",
         description = "A SQL linter and auto-formatter for Humans",
+        notes = {
+            "SQLFluff needs a mandatory `--dialect` argument. Use `extra_args` to add yours, or create a .sqlfluff file in the same directory as the SQL file to specify the dialect (see the sqlfluff docs for details). `extra_args` can also be a function to build more sophisticated logic.",
+        },
+        usage = [[
+local sources = {
+    null_ls.builtins.diagnostics.sqlfluff.with({
+        extra_args = { "--dialect", "postgres" }, -- change to your dialect
+    }),
+}]],
     },
     method = null_ls.methods.DIAGNOSTICS,
     filetypes = { "sql" },
@@ -13,14 +22,15 @@ return helpers.make_builtin({
         command = "sqlfluff",
         args = {
             "lint",
+            "--disable-progress-bar",
             "-f",
             "github-annotation",
             "-n",
-            "--disable_progress_bar",
-            "-",
+            "$FILENAME",
         },
-        from_stderr = true,
-        to_stdin = true,
+        from_stderr = false,
+        to_stdin = false,
+        to_temp_file = true,
         format = "json",
         check_exit_code = function(c)
             return c <= 1

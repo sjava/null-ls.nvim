@@ -8,6 +8,15 @@ return h.make_builtin({
     meta = {
         url = "https://github.com/sqlfluff/sqlfluff",
         description = "A SQL linter and auto-formatter for Humans",
+        notes = {
+            "SQLFluff needs a mandatory `--dialect` argument. Use `extra_args` to add yours. `extra_args` can also be a function to build more sophisticated logic.",
+        },
+        usage = [[
+local sources = {
+    null_ls.builtins.formatting.sqlfluff.with({
+        extra_args = { "--dialect", "postgres" }, -- change to your dialect
+    }),
+}]],
     },
     method = FORMATTING,
     filetypes = { "sql" },
@@ -15,7 +24,7 @@ return h.make_builtin({
         command = "sqlfluff",
         args = {
             "fix",
-            "--disable_progress_bar",
+            "--disable-progress-bar",
             "-f",
             "-n",
             "-",

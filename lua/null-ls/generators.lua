@@ -35,9 +35,17 @@ M.run = function(generators, params, opts, callback)
     end
 
     local futures = {}
+    local copy_params = function(to_copy)
+        if #generators < 2 then
+            return to_copy
+        end
+
+        return vim.deepcopy(to_copy)
+    end
+
     for i, generator in ipairs(generators) do
         table.insert(futures, function()
-            local copied_params = vim.deepcopy(opts.make_params and opts.make_params() or params)
+            local copied_params = copy_params(opts.make_params and opts.make_params() or params)
 
             local runtime_condition = generator.opts and generator.opts.runtime_condition
             if runtime_condition and not runtime_condition(copied_params) then
@@ -56,6 +64,12 @@ M.run = function(generators, params, opts, callback)
             local protected_call = generator.async and a.util.apcall or pcall
             local ok, results = protected_call(to_run, copied_params)
             a.util.scheduler()
+
+            -- filter results with the filter option
+            local filter = generator.opts and generator.opts.filter
+            if filter and results then
+                results = vim.tbl_filter(filter, results)
+            end
 
             if results then
                 -- allow generators to pass errors without throwing them (e.g. in luv callbacks)

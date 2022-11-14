@@ -1,7 +1,16 @@
 local h = require("null-ls.helpers")
 local methods = require("null-ls.methods")
+local u = require("null-ls.utils")
 
 local DIAGNOSTICS = methods.internal.DIAGNOSTICS
+
+local overrides = {
+    severities = {
+        error = h.diagnostics.severities["error"],
+        warning = h.diagnostics.severities["warning"],
+        note = h.diagnostics.severities["information"],
+    },
+}
 
 return h.make_builtin({
     name = "mypy",
@@ -35,17 +44,35 @@ benefits of dynamic (or "duck") typing and static typing.]],
             return code <= 2
         end,
         multiple_files = true,
-        on_output = h.diagnostics.from_pattern(
-            "([^:]+):(%d+):(%d+): (%a+): (.*)  %[([%a-]+)%]", --
-            { "filename", "row", "col", "severity", "message", "code" },
+        on_output = h.diagnostics.from_patterns({
+            -- see spec for pattern examples
             {
-                severities = {
-                    error = h.diagnostics.severities["error"],
-                    warning = h.diagnostics.severities["warning"],
-                    note = h.diagnostics.severities["information"],
-                },
-            }
-        ),
+                pattern = "([^:]+):(%d+):(%d+): (%a+): (.*)  %[([%a-]+)%]",
+                groups = { "filename", "row", "col", "severity", "message", "code" },
+                overrides = overrides,
+            },
+            -- no error code
+            {
+                pattern = "([^:]+):(%d+):(%d+): (%a+): (.*)",
+                groups = { "filename", "row", "col", "severity", "message" },
+                overrides = overrides,
+            },
+            -- no column or error code
+            {
+                pattern = "([^:]+):(%d+): (%a+): (.*)",
+                groups = { "filename", "row", "severity", "message" },
+                overrides = overrides,
+            },
+        }),
+        cwd = h.cache.by_bufnr(function(params)
+            return u.root_pattern(
+                -- https://mypy.readthedocs.io/en/stable/config_file.html
+                "mypy.ini",
+                ".mypy.ini",
+                "pyproject.toml",
+                "setup.cfg"
+            )(params.bufname)
+        end),
     },
     factory = h.generator_factory,
 })

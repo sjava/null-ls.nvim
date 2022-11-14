@@ -25,12 +25,12 @@ All options are **required** unless specified otherwise.
 local helpers = require("null-ls.helpers")
 
 helpers.generator_factory({
-    args, -- table (optional)
+    args, -- function or table (optional)
     check_exit_code, -- function or table of numbers (optional)
     command, -- string or function
-    env, -- table (optional)
     cwd, -- function (optional)
     dynamic_command, -- function (optional)
+    env, -- function or table (optional)
     format, -- "raw", "line", "json", or "json_raw" (optional)
     from_stderr, -- boolean (optional)
     from_temp_file, -- boolean (optional)
@@ -50,7 +50,9 @@ the first time.
 
 ### args
 
-A table containing the arguments passed when spawning the command. Defaults to `{}`.
+A table containing the arguments passed when spawning the command or a function
+that takes one argument, `params` (an object containing information about the
+current editor status) and returns an `args` table. Defaults to `{}`.
 
 null-ls will transform the following special arguments before spawning:
 
@@ -70,11 +72,11 @@ null-ls will transform the following special arguments before spawning:
 Can either be a table of valid exit codes (numbers) or a callback that receives
 two arguments:
 
-`code`: contains the exit code from the spawned command as a number
-`stderr`: error output from the job as a string
+`code`: contains the exit code from the spawned command as a number `stderr`:
+error output from the job as a string
 
-The callback should return a boolean value indicating whether the code
-indicates _success_.
+The callback should return a boolean value indicating whether the code indicates
+_success_.
 
 If not specified, null-ls will assume that a non-zero exit code indicates
 failure.
@@ -109,6 +111,13 @@ performance, so it's best to cache its output when possible.
 
 Note that setting `dynamic_command` will disable `command` validation.
 
+### env
+
+A key-value pair table containing the environment variables that should be passed
+when spawning the command or a function that takes one argument, `params` (an
+object containing information about the current editor status) and returns an
+`env` table. Defaults to `nil`.
+
 ### format
 
 Specifies the format used to transform output before passing it to `on_output`.
@@ -117,16 +126,16 @@ Supports the following options:
 - `"raw"`: passes command output directly as `params.output` (string) and error
   output as `params.err` (string).
 
-  This format will call `on_output(params, done)`, where `done()` is a callback that
-  `on_output` must call with its results (see _Generators_ in
+  This format will call `on_output(params, done)`, where `done()` is a callback
+  that `on_output` must call with its results (see _Generators_ in
   [MAIN](MAIN.md) for details).
 
 - `nil`: same as `raw`, but does not receive error output. Instead, any output
   to `stderr` will cause the generator to throw an error, unless `ignore_stderr`
   is also enabled (see below).
 
-- `"line"`: splits generator output into lines and calls `on_output(line, params)`
-  once for each line, where `line` is a string.
+- `"line"`: splits generator output into lines and calls
+  `on_output(line, params)` once for each line, where `line` is a string.
 
 - `"json"`: decodes generator output into JSON, sets `params.output` to the
   resulting JSON object, and calls `on_output(params)`. The wrapper will
@@ -140,11 +149,11 @@ To sum up:
 
 - If you want to handle each line of a source's output, use `format = "line"`.
 
-- If you are handling JSON output, use `format = "json"` if you don't intend on handling
-  errors and `format = "json_raw"` if you do.
+- If you are handling JSON output, use `format = "json"` if you don't intend on
+  handling errors and `format = "json_raw"` if you do.
 
-- If you are processing a source's entire output, use `format = nil` if you don't
-  intend on handling errors and `format = "raw"` if you do.
+- If you are processing a source's entire output, use `format = nil` if you
+  don't intend on handling errors and `format = "raw"` if you do.
 
 ### from_stderr
 
@@ -180,8 +189,8 @@ one file if this option is `true` and each diagnostic specifies a `bufnr` or
 ### on_output
 
 A callback function that receives a `params` object, which contains information
-about the current buffer and editor state (see _Generators_ in
-[MAIN](MAIN.md) for details).
+about the current buffer and editor state (see _Generators_ in [MAIN](MAIN.md)
+for details).
 
 Generators created by `generator_factory` have access to an extra parameter,
 `params.output`, which contains the output from the spawned command. The
@@ -326,6 +335,8 @@ null_ls.helpers.range_formatting_args_factory(base_args, start_arg, end_rag, opt
 - `opts` (table?): a table containing the following options:
   - `opts.use_rows` (boolean?): specifies whether to use rows over character
     offsets.
+  - `opts.use_length` (boolean?): used to specify the length of the range in
+    `end_arg` instead of end the position.
   - `opts.row_offset` (number?): offset applied to row numbers.
   - `opts.col_offset` (number?): offset applied to column numbers.
   - `opts.delimiter` (string?): used to join range start and end into a single
@@ -335,3 +346,25 @@ null_ls.helpers.range_formatting_args_factory(base_args, start_arg, end_rag, opt
 
 Helpers used to convert CLI output into diagnostics. See the source for details
 and the built-in diagnostics sources for examples.
+
+## cache
+
+Helpers used to cache output from callbacks and help improve performance.
+
+### by_bufnr(callback)
+
+Creates a function that caches the result of `callback`, indexed by `bufnr`. On
+the first run of the created function, null-ls will call `callback` with a
+`params` object containing information about the buffer's state and cache its
+output using `bufnr` as a key. On the next run, it will directly return the
+cached value without calling `callback` again.
+
+This is useful when the return value of `callback` is not expected to change
+over the lifetime of the buffer, which works well for `cwd` and
+`runtime_condition` callbacks. Users can use it as a simple shortcut to improve
+performance, and built-in authors can use it to add logic that would otherwise
+be too performance-intensive to include out-of-the-box.
+
+Note that if `callback` returns `nil`, the helper will override the return value
+and instead cache `false` (so that it can determine that it already ran
+`callback` once and should not run it again).

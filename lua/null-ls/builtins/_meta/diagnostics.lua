@@ -16,16 +16,37 @@ return {
   buildifier = {
     filetypes = { "bzl" }
   },
+  cfn_lint = {
+    filetypes = { "yaml", "json" }
+  },
   checkmake = {
     filetypes = { "make" }
+  },
+  checkstyle = {
+    filetypes = { "java" }
   },
   chktex = {
     filetypes = { "tex" }
   },
+  clang_check = {
+    filetypes = { "c", "cpp" }
+  },
+  clj_kondo = {
+    filetypes = { "clojure" }
+  },
+  cmake_lint = {
+    filetypes = { "cmake" }
+  },
   codespell = {
     filetypes = {}
   },
+  commitlint = {
+    filetypes = { "gitcommit" }
+  },
   cppcheck = {
+    filetypes = { "cpp", "c" }
+  },
+  cpplint = {
     filetypes = { "cpp", "c" }
   },
   credo = {
@@ -67,8 +88,14 @@ return {
   gccdiag = {
     filetypes = { "c", "cpp" }
   },
+  gdlint = {
+    filetypes = { "gdscript" }
+  },
   gitlint = {
     filetypes = { "gitcommit" }
+  },
+  glslc = {
+    filetypes = { "glsl" }
   },
   golangci_lint = {
     filetypes = { "go" }
@@ -79,16 +106,25 @@ return {
   haml_lint = {
     filetypes = { "haml" }
   },
+  jshint = {
+    filetypes = { "javascript" }
+  },
   jsonlint = {
     filetypes = { "json" }
   },
   ktlint = {
     filetypes = { "kotlin" }
   },
+  ltrs = {
+    filetypes = { "text", "markdown", "markdown" }
+  },
   luacheck = {
     filetypes = { "lua" }
   },
   markdownlint = {
+    filetypes = { "markdown" }
+  },
+  markdownlint_cli2 = {
     filetypes = { "markdown" }
   },
   mdl = {
@@ -98,10 +134,16 @@ return {
     filetypes = {}
   },
   mlint = {
-    filetypes = { "matlab" }
+    filetypes = { "matlab", "octave" }
   },
   mypy = {
     filetypes = { "python" }
+  },
+  opacheck = {
+    filetypes = { "rego" }
+  },
+  perlimports = {
+    filetypes = { "perl" }
   },
   php = {
     filetypes = { "php" }
@@ -114,6 +156,9 @@ return {
   },
   phpstan = {
     filetypes = { "php" }
+  },
+  pmd = {
+    filetypes = { "java", "jsp" }
   },
   proselint = {
     filetypes = { "markdown", "tex" }
@@ -132,6 +177,9 @@ return {
   },
   puppet_lint = {
     filetypes = { "puppet", "epuppet" }
+  },
+  pycodestyle = {
+    filetypes = { "python" }
   },
   pydocstyle = {
     filetypes = { "python" }
@@ -160,17 +208,26 @@ return {
   rubocop = {
     filetypes = { "ruby" }
   },
+  ruff = {
+    filetypes = { "python" }
+  },
   selene = {
-    filetypes = { "lua" }
+    filetypes = { "lua", "luau" }
   },
   semgrep = {
     filetypes = { "typescript", "typescriptreact", "ruby", "python", "java", "go" }
+  },
+  semistandardjs = {
+    filetypes = { "javascript", "javascriptreact" }
   },
   shellcheck = {
     filetypes = { "sh" }
   },
   solhint = {
     filetypes = { "solidity" }
+  },
+  spectral = {
+    filetypes = { "yaml", "json" }
   },
   sqlfluff = {
     filetypes = { "sql" }
@@ -201,6 +258,9 @@ return {
   },
   tidy = {
     filetypes = { "html", "xml" }
+  },
+  todo_comments = {
+    filetypes = {}
   },
   trail_space = {
     filetypes = {}

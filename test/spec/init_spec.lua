@@ -11,7 +11,6 @@ describe("init", function()
         assert.equals(type(null_ls.register_name), "function")
         assert.equals(type(null_ls.methods), "table")
         assert.equals(type(null_ls.builtins), "table")
-        assert.equals(type(null_ls.null_ls_info), "function")
         assert.equals(type(null_ls.generator), "function")
         assert.equals(type(null_ls.formatter), "function")
     end)
@@ -25,16 +24,7 @@ describe("init", function()
             config.setup:revert()
 
             config.reset()
-            vim.g.null_ls_disable = nil
             vim.cmd("silent! delcommand NullLsInfo")
-        end)
-
-        it("should not set up null-ls if null_ls_disable is set", function()
-            vim.g.null_ls_disable = true
-
-            null_ls.setup()
-
-            assert.stub(config.setup).was_not_called()
         end)
 
         it("should not set up null-ls if already set up", function()

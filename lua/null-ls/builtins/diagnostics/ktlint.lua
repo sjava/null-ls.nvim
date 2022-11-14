@@ -16,9 +16,10 @@ return h.make_builtin({
         args = {
             "--relative",
             "--reporter=json",
+            "**/*.kt",
+            "**/*.kts",
         },
         to_stdin = true,
-        from_stderr = true,
         format = "json",
         multiple_files = true,
         check_exit_code = function(code)

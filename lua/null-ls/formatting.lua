@@ -35,7 +35,12 @@ M.handler = function(method, original_params, handler)
 
         local called_handler = false
         local handler_wrapper = function(...)
-            -- calling handler twice breaks lsp.buf.formatting_sync()
+            -- don't call handler if buffer was unloaded, e.g. on :wq
+            if not api.nvim_buf_is_loaded(bufnr) then
+                return
+            end
+
+            -- calling handler twice breaks sync formatting
             if called_handler then
                 return
             end
@@ -63,12 +68,8 @@ M.handler = function(method, original_params, handler)
         end
 
         local after_each = function(edits)
-            local ok, err = pcall(
-                lsp.util.apply_text_edits,
-                edits,
-                temp_bufnr,
-                require("null-ls.client").get_offset_encoding()
-            )
+            local ok, err =
+                pcall(lsp.util.apply_text_edits, edits, temp_bufnr, require("null-ls.client").get_offset_encoding())
             if not ok then
                 handle_err(err)
             end
@@ -85,7 +86,7 @@ M.handler = function(method, original_params, handler)
 
                 if is_actual_edit then
                     log:debug("received edits from generators")
-                    log:trace(edits)
+                    log:trace(vim.inspect(edits))
                 end
 
                 handler_wrapper(is_actual_edit and { edits } or nil)

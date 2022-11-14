@@ -2,6 +2,9 @@
 -- stylua: ignore
 return {
   dictionary = {
-    filetypes = { "text", "markdown" }
+    filetypes = { "org", "text", "markdown" }
+  },
+  printenv = {
+    filetypes = { "sh", "dosbatch", "ps1" }
   }
 }

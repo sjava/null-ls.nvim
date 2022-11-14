@@ -1,6 +1,53 @@
 local diagnostics = require("null-ls.builtins").diagnostics
 
 describe("diagnostics", function()
+    describe("spectral", function()
+        local linter = diagnostics.spectral
+        local parser = linter._opts.on_output
+
+        it("should create a diagnostic with an Warning severity", function()
+            local output = vim.json.decode([[
+                [
+                    {
+                        "code": "oas3-operation-security-defined",
+                        "path": [
+                                "security",
+                                "0",
+                                "bearer"
+                        ],
+                        "message": "API \"security\" values must match a scheme defined in the \"components.securitySchemes\" object.",
+                        "severity": 1,
+                        "range": {
+                                "start": {
+                                        "line": 659,
+                                        "character": 11
+                                },
+                                "end": {
+                                        "line": 659,
+                                        "character": 14
+                                }
+                        },
+                        "source": "/home/luizcorreia/repos/smiles/OpenApi/openapi.yaml"
+                    }
+                ]
+            ]])
+
+            local diagnostic = parser({ output = output })
+            assert.same({
+                {
+                    code = "oas3-operation-security-defined",
+                    col = 11,
+                    end_col = 14,
+                    end_row = 660,
+                    message = 'API "security" values must match a scheme defined in the "components.securitySchemes" object.',
+                    path = { "security", "0", "bearer" },
+                    row = 660,
+                    severity = 2,
+                    source = "Spectral",
+                },
+            }, diagnostic)
+        end)
+    end)
     describe("buf", function()
         local linter = diagnostics.buf
         local parser = linter._opts.on_output
@@ -342,41 +389,49 @@ describe("diagnostics", function()
         local parser = linter._opts.on_output
         local file = {
             [[require("settings").load_options()]],
-            "vim.cmd [[",
-            [[local command = table.concat(vim.tbl_flatten { "autocmd", def }, " ")]],
+            "vim.cmd [[ ]]",
+            "local b = 3 + 34",
         }
+        local output = table.concat({
+            "1 warning:",
+            "tmp.tl:3:7: unused variable b: integer",
+            "2 errors:",
+            "tmp.tl:1:8: module not found: 'settings'",
+            "tmp.tl:2:1: unknown variable: vim",
+        }, "\n")
 
-        it("should create a diagnostic (quote field is between quotes)", function()
-            local output = [[init.lua:1:8: module not found: 'settings']]
-            local diagnostic = parser(output, { content = file })
+        local teal_diagnostics = nil
+        local function done(_diagnostics)
+            teal_diagnostics = _diagnostics
+        end
+
+        parser({ content = file, output = output, temp_path = "tmp.tl" }, done)
+
+        it("should create a diagnostic with a warning severity (no quote)", function()
+            assert.same({
+                row = "3",
+                col = "7",
+                message = "unused variable b: integer",
+                severity = 2,
+            }, teal_diagnostics[1])
+        end)
+        it("should create a diagnostic with an error severity (quote field is between quotes)", function()
             assert.same({
                 row = "1",
                 col = "8",
-                end_col = 17,
+                end_col = 18,
                 message = "module not found: 'settings'",
-                source = "tl check",
-            }, diagnostic)
+                severity = 1,
+            }, teal_diagnostics[2])
         end)
-        it("should create a diagnostic (quote field is not between quotes)", function()
-            local output = [[init.lua:2:1: unknown variable: vim]]
-            local diagnostic = parser(output, { content = file })
+        it("should create a diagnostic with an error severity (quote field is not between quotes)", function()
             assert.same({
                 row = "2",
                 col = "1",
-                end_col = 3,
+                end_col = 4,
                 message = "unknown variable: vim",
-                source = "tl check",
-            }, diagnostic)
-        end)
-        it("should create a diagnostic by using the second pattern", function()
-            local output = [[autocmds.lua:3:46: argument 1: got <unknown type>, expected {string}]]
-            local diagnostic = parser(output, { content = file })
-            assert.same({
-                row = "3",
-                col = "46",
-                message = "argument 1: got <unknown type>, expected {string}",
-                source = "tl check",
-            }, diagnostic)
+                severity = 1,
+            }, teal_diagnostics[3])
         end)
     end)
 
@@ -1087,6 +1142,549 @@ describe("diagnostics", function()
                     message = "Extra space detected where there should be no space.",
                 },
             }, diagnostic)
+        end)
+    end)
+
+    describe("mypy", function()
+        local linter = diagnostics.mypy
+        local parser = linter._opts.on_output
+        it("should handle full diagnostic", function()
+            local output =
+                'test.py:1:1: error: Library stubs not installed for "requests" (or incompatible with Python 3.9)  [import]'
+            local diagnostic = parser(output, {})
+            assert.same({
+                row = "1",
+                col = "1",
+                severity = 1,
+                message = 'Library stubs not installed for "requests" (or incompatible with Python 3.9)',
+                filename = "test.py",
+                code = "import",
+            }, diagnostic)
+        end)
+
+        it("should diagnostic without code", function()
+            local output = 'test.py:1:1: note: Hint: "python3 -m pip install types-requests"'
+            local diagnostic = parser(output, {})
+            assert.same({
+                row = "1",
+                col = "1",
+                severity = 3,
+                message = 'Hint: "python3 -m pip install types-requests"',
+                filename = "test.py",
+            }, diagnostic)
+        end)
+
+        it("should handle diagnostic with no column or error code", function()
+            local output = [[tests/slack_app/conftest.py:10: error: Unused "type: ignore" comment]]
+            local diagnostic = parser(output, {})
+            assert.same({
+                row = "10",
+                severity = 1,
+                message = 'Unused "type: ignore" comment',
+                filename = "tests/slack_app/conftest.py",
+            }, diagnostic)
+        end)
+    end)
+
+    describe("opacheck", function()
+        local linter = diagnostics.opacheck
+        local parser = linter._opts.on_output
+
+        it("should create a diagnostic with error severity", function()
+            local output = vim.json.decode([[
+            {
+              "errors": [
+                {
+                  "message": "var tenant_id is unsafe",
+                  "code": "rego_unsafe_var_error",
+                  "location": {
+                    "file": "src/geo.rego",
+                    "row": 49,
+                    "col": 3
+                  }
+                }
+              ]
+            } ]])
+            local diagnostic = parser({ output = output })
+            assert.same({
+                {
+                    row = 49,
+                    col = 3,
+                    severity = 1,
+                    message = "var tenant_id is unsafe",
+                    filename = "src/geo.rego",
+                    source = "opacheck",
+                    code = "rego_unsafe_var_error",
+                },
+            }, diagnostic)
+        end)
+
+        it("should not create a diagnostic without location", function()
+            local output = vim.json.decode([[
+            {
+              "errors": [
+                {
+                  "message": "var tenant_id is unsafe",
+                  "code": "rego_unsafe_var_error"
+                }
+              ]
+            } ]])
+            local diagnostic = parser({ output = output })
+            assert.same({}, diagnostic)
+        end)
+    end)
+    describe("glslc", function()
+        local linter = diagnostics.glslc
+        local parser = linter._opts.on_output
+
+        -- some of the example output gotten from: https://github.com/google/shaderc/blob/main/glslc/test/messages_tests.py
+        it("glslc error", function()
+            local output =
+                [[glslc: error: 'path/to/tempfile.glsl': .glsl file encountered but no -fshader-stage specified ahead]]
+            local diagnostic = parser(output, {})
+            assert.same({
+                severity = 1,
+                message = ".glsl file encountered but no -fshader-stage specified ahead",
+            }, diagnostic)
+        end)
+        it("line error with quotes", function()
+            local output =
+                [[filename.glsl:14: error: 'non-opaque uniforms outside a block' : not allowed when using GLSL for Vulkan]]
+            local diagnostic = parser(output, {})
+            assert.same({
+                filename = "filename.glsl",
+                row = "14",
+                severity = 1,
+                message = "'non-opaque uniforms outside a block' : not allowed when using GLSL for Vulkan",
+            }, diagnostic)
+        end)
+        it("line error with empty quotes", function()
+            local output = [[filename2.glsl:2: error: '' : function does not return a value: main]]
+            local diagnostic = parser(output, {})
+            assert.same({
+                filename = "filename2.glsl",
+                row = "2",
+                severity = 1,
+                message = "'' : function does not return a value: main",
+            }, diagnostic)
+        end)
+        it("line warning without quotes", function()
+            local output =
+                [[filename3.glsl:2: warning: attribute deprecated in version 130; may be removed in future release]]
+            local diagnostic = parser(output, {})
+            assert.same({
+                filename = "filename3.glsl",
+                row = "2",
+                severity = 2,
+                message = "attribute deprecated in version 130; may be removed in future release",
+            }, diagnostic)
+        end)
+        it("file warning", function()
+            local output =
+                [[filename4.glsl: warning: (version, profile) forced to be (400, none), while in source code it is (550, none)]]
+            local diagnostic = parser(output, {})
+            assert.same({
+                filename = "filename4.glsl",
+                severity = 2,
+                message = "(version, profile) forced to be (400, none), while in source code it is (550, none)",
+            }, diagnostic)
+        end)
+    end)
+
+    describe("checkstyle", function()
+        local linter = diagnostics.checkstyle
+        local parser = linter._opts.on_output
+
+        it("should parse the usual output", function()
+            local output = vim.json.decode([[
+                {
+                  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+                  "version": "2.1.0",
+                  "runs": [
+                    {
+                      "tool": {
+                        "driver": {
+                          "downloadUri": "https://github.com/checkstyle/checkstyle/releases/",
+                          "fullName": "Checkstyle",
+                          "informationUri": "https://checkstyle.org/",
+                          "language": "en",
+                          "name": "Checkstyle",
+                          "organization": "Checkstyle",
+                          "rules": [
+                          ],
+                          "semanticVersion": "10.3.4",
+                          "version": "10.3.4"
+                        }
+                      },
+                      "results": [
+                        {
+                          "level": "warning",
+                          "locations": [
+                            {
+                              "physicalLocation": {
+                                "artifactLocation": {
+                                  "uri": "/home/someuser/Code/someproject/FooController.java"
+                                },
+                                "region": {
+                                  "startColumn": 1,
+                                  "startLine": 1
+                                }
+                              }
+                            }
+                          ],
+                          "message": {
+                            "text": "Missing a Javadoc comment."
+                          },
+                          "ruleId": "javadoc.missing"
+                        },
+                        {
+                          "level": "warning",
+                          "locations": [
+                            {
+                              "physicalLocation": {
+                                "artifactLocation": {
+                                  "uri": "/home/someuser/Code/someproject/ReportController.java"
+                                },
+                                "region": {
+                                  "startColumn": 4,
+                                  "startLine": 74
+                                }
+                              }
+                            }
+                          ],
+                          "message": {
+                            "text": "Missing a Javadoc comment (Test)."
+                          },
+                          "ruleId": "javadoc.missing.test"
+                        }
+                      ]
+                    }
+                  ]
+                }
+            ]])
+            local parsed = parser({ output = output })
+            assert.same({
+                {
+                    row = 1,
+                    col = 1,
+                    end_col = 2,
+                    code = "javadoc.missing",
+                    message = "Missing a Javadoc comment.",
+                    severity = vim.diagnostic.severity.WARN,
+                    filename = "/home/someuser/Code/someproject/FooController.java",
+                },
+                {
+                    row = 74,
+                    col = 4,
+                    end_col = 5,
+                    code = "javadoc.missing.test",
+                    message = "Missing a Javadoc comment (Test).",
+                    severity = vim.diagnostic.severity.WARN,
+                    filename = "/home/someuser/Code/someproject/ReportController.java",
+                },
+            }, parsed)
+        end)
+
+        it('should ignore the "ends with n errors" message', function()
+            local output = vim.json.decode([[
+                {
+                  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+                  "version": "2.1.0",
+                  "runs": [
+                    {
+                      "tool": {
+                        "driver": {
+                          "downloadUri": "https://github.com/checkstyle/checkstyle/releases/",
+                          "fullName": "Checkstyle",
+                          "informationUri": "https://checkstyle.org/",
+                          "language": "en",
+                          "name": "Checkstyle",
+                          "organization": "Checkstyle",
+                          "rules": [
+                          ],
+                          "semanticVersion": "10.3.4",
+                          "version": "10.3.4"
+                        }
+                      },
+                      "results": [
+                        {
+                          "level": "warning",
+                          "locations": [
+                            {
+                              "physicalLocation": {
+                                "artifactLocation": {
+                                  "uri": "/home/someuser/Code/someproject/FooController.java"
+                                },
+                                "region": {
+                                  "startColumn": 1,
+                                  "startLine": 1
+                                }
+                              }
+                            }
+                          ],
+                          "message": {
+                            "text": "Missing a Javadoc comment."
+                          },
+                          "ruleId": "javadoc.missing"
+                        }
+                      ]
+                    }
+                  ]
+                }
+            ]])
+            local err = [[Checkstyle ends with 42 errors.\n]]
+            local parsed = parser({ output = output, err = err })
+            assert.same({
+                {
+                    row = 1,
+                    col = 1,
+                    end_col = 2,
+                    code = "javadoc.missing",
+                    message = "Missing a Javadoc comment.",
+                    severity = vim.diagnostic.severity.WARN,
+                    filename = "/home/someuser/Code/someproject/FooController.java",
+                },
+            }, parsed)
+        end)
+
+        it("should rephrase the missing config message", function()
+            local parsed = parser({ bufnr = 42, output = nil, err = [[Must specify a config XML file.\n]] })
+            assert.same({
+                {
+                    message = "You need to specify a configuration for checkstyle. See"
+                        .. " https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#checkstyle",
+                    severity = vim.diagnostic.severity.ERROR,
+                    bufnr = 42,
+                },
+            }, parsed)
+        end)
+
+        it("should add other errors", function()
+            local output = vim.json.decode([[
+                {
+                  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+                  "version": "2.1.0",
+                  "runs": [
+                    {
+                      "tool": {
+                        "driver": {
+                          "downloadUri": "https://github.com/checkstyle/checkstyle/releases/",
+                          "fullName": "Checkstyle",
+                          "informationUri": "https://checkstyle.org/",
+                          "language": "en",
+                          "name": "Checkstyle",
+                          "organization": "Checkstyle",
+                          "rules": [
+                          ],
+                          "semanticVersion": "10.3.4",
+                          "version": "10.3.4"
+                        }
+                      },
+                      "results": [
+                        {
+                          "level": "warning",
+                          "locations": [
+                            {
+                              "physicalLocation": {
+                                "artifactLocation": {
+                                  "uri": "/home/someuser/Code/someproject/FooController.java"
+                                },
+                                "region": {
+                                  "startColumn": 1,
+                                  "startLine": 1
+                                }
+                              }
+                            }
+                          ],
+                          "message": {
+                            "text": "Missing a Javadoc comment."
+                          },
+                          "ruleId": "javadoc.missing"
+                        }
+                      ]
+                    }
+                  ]
+                }
+            ]])
+            local err = [[Some other error.\n]]
+            local parsed = parser({ bufnr = 42, output = output, err = err })
+            assert.same({
+                {
+                    message = vim.trim(err),
+                    severity = vim.diagnostic.severity.ERROR,
+                    bufnr = 42,
+                },
+                {
+                    row = 1,
+                    col = 1,
+                    end_col = 2,
+                    code = "javadoc.missing",
+                    message = "Missing a Javadoc comment.",
+                    severity = vim.diagnostic.severity.WARN,
+                    filename = "/home/someuser/Code/someproject/FooController.java",
+                },
+            }, parsed)
+        end)
+    end)
+
+    describe("pmd", function()
+        local linter = diagnostics.pmd
+        local parser = linter._opts.on_output
+
+        it("should parse the usual output", function()
+            local output = vim.json.decode([[
+                {
+                  "formatVersion": 0,
+                  "pmdVersion": "6.50.0",
+                  "timestamp": "2022-10-21T20:44:51.872+02:00",
+                  "files": [
+                    {
+                      "filename": "/home/someuser/Code/someproject/FooController.java",
+                      "violations": [
+                        {
+                          "beginline": 1,
+                          "begincolumn": 8,
+                          "endline": 2,
+                          "endcolumn": 1,
+                          "description": "Class comments are required",
+                          "rule": "CommentRequired",
+                          "ruleset": "Documentation",
+                          "priority": 3,
+                          "externalInfoUrl": "https://pmd.github.io/pmd-6.50.0/pmd_rules_java_documentation.html#commentrequired"
+                        }
+                      ]
+                    },
+                    {
+                      "filename": "/home/someuser/Code/someproject/ReportController.java",
+                      "violations": [
+                        {
+                          "beginline": 76,
+                          "begincolumn": 8,
+                          "endline": 712,
+                          "endcolumn": 1,
+                          "description": "Class comments are required 2",
+                          "rule": "CommentRequired2",
+                          "ruleset": "Documentation",
+                          "priority": 3,
+                          "externalInfoUrl": "https://pmd.github.io/pmd-6.50.0/pmd_rules_java_documentation.html#commentrequired"
+                        },
+                        {
+                          "beginline": 77,
+                          "begincolumn": 23,
+                          "endline": 77,
+                          "endcolumn": 57,
+                          "description": "Field comments are required 3",
+                          "rule": "CommentRequired3",
+                          "ruleset": "Documentation",
+                          "priority": 3,
+                          "externalInfoUrl": "https://pmd.github.io/pmd-6.50.0/pmd_rules_java_documentation.html#commentrequired"
+                        }
+                      ]
+                    }
+                  ],
+                  "suppressedViolations": [],
+                  "processingErrors": [],
+                  "configurationErrors": []
+                }
+            ]])
+            local parsed = parser({ output = output })
+            assert.same({
+                {
+                    row = 1,
+                    col = 8,
+                    end_row = 2,
+                    end_col = 2,
+                    code = "Documentation/CommentRequired",
+                    message = "Class comments are required",
+                    severity = vim.diagnostic.severity.WARN,
+                    filename = "/home/someuser/Code/someproject/FooController.java",
+                },
+                {
+                    row = 76,
+                    col = 8,
+                    end_row = 712,
+                    end_col = 2,
+                    code = "Documentation/CommentRequired2",
+                    message = "Class comments are required 2",
+                    severity = vim.diagnostic.severity.WARN,
+                    filename = "/home/someuser/Code/someproject/ReportController.java",
+                },
+                {
+                    row = 77,
+                    col = 23,
+                    end_row = 77,
+                    end_col = 58,
+                    code = "Documentation/CommentRequired3",
+                    message = "Field comments are required 3",
+                    severity = vim.diagnostic.severity.WARN,
+                    filename = "/home/someuser/Code/someproject/ReportController.java",
+                },
+            }, parsed)
+        end)
+
+        it("should show the caching encouragement as warning", function()
+            local output = vim.json.decode([[
+                {
+                  "formatVersion": 0,
+                  "pmdVersion": "6.50.0",
+                  "timestamp": "2022-10-21T20:44:51.872+02:00",
+                  "files": [],
+                  "suppressedViolations": [],
+                  "processingErrors": [],
+                  "configurationErrors": []
+                }
+            ]])
+            local err = [[Oct 21, 2022 10:57:30 PM net.sourceforge.pmd.PMD encourageToUseIncrementalAnalysis
+WARNING: This analysis could be faster, please consider using Incremental Analysis: https://pmd.github.io/pmd-6.50.0/pmd_userdocs_incremental_analysis.html]]
+            local parsed = parser({ bufnr = 42, err = err, output = output })
+            assert.same({
+                {
+                    code = "encourageToUseIncrementalAnalysis",
+                    message = "WARNING: This analysis could be faster, please consider using Incremental Analysis: https://pmd.github.io/pmd-6.50.0/pmd_userdocs_incremental_analysis.html",
+                    severity = vim.diagnostic.severity.WARN,
+                    bufnr = 42,
+                },
+            }, parsed)
+        end)
+
+        it("should rephrase the missing ruleset message", function()
+            local parsed = parser({
+                bufnr = 42,
+                output = nil,
+                err = [[The following option is required: --rulesets, -rulesets, -R
+Run with --help for command line help.]],
+            })
+            assert.same({
+                {
+                    message = "You need to specify a ruleset for PMD. See"
+                        .. " https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md#pmd",
+                    severity = vim.diagnostic.severity.ERROR,
+                    bufnr = 42,
+                },
+            }, parsed)
+        end)
+
+        it("should show other error messages", function()
+            local output = vim.json.decode([[
+                {
+                  "formatVersion": 0,
+                  "pmdVersion": "6.50.0",
+                  "timestamp": "2022-10-21T20:44:51.872+02:00",
+                  "files": [],
+                  "suppressedViolations": [],
+                  "processingErrors": [],
+                  "configurationErrors": []
+                }
+            ]])
+            local err = [[Some other message.]]
+            local parsed = parser({ bufnr = 42, err = err, output = output })
+            assert.same({
+                {
+                    message = err,
+                    severity = vim.diagnostic.severity.ERROR,
+                    bufnr = 42,
+                },
+            }, parsed)
         end)
     end)
 end)

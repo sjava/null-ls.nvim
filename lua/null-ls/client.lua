@@ -32,10 +32,24 @@ local should_attach = function(bufnr)
 end
 
 local on_init = function(new_client, initialize_result)
+    local capability_is_disabled
+    if u.has_version("0.8") then
+        capability_is_disabled = function(method)
+            -- TODO: extract map to prevent future issues
+            local required_capability = lsp._request_name_to_capability[method]
+            return not required_capability
+                or vim.tbl_get(new_client.server_capabilities, unpack(required_capability)) == false
+        end
+    else
+        capability_is_disabled = function(method)
+            return new_client.resolved_capabilities[methods.request_name_to_capability[method]] == false
+        end
+    end
+
     -- null-ls broadcasts all capabilities on launch, so this lets us have finer control
     new_client.supports_method = function(method)
-        -- capability was not declared or is specifically disabled
-        if new_client.resolved_capabilities[methods.request_name_to_capability[method]] == false then
+        -- allow users to specifically disable capabilities
+        if capability_is_disabled(method) then
             return false
         end
 
@@ -66,27 +80,31 @@ end
 local M = {}
 
 M.start_client = function(fname)
-    require("null-ls.rpc").setup()
+    local should_patch_rpc = not u.has_version("0.8")
+    if should_patch_rpc then
+        require("null-ls.rpc").setup()
+    end
 
     local config = {
         name = "null-ls",
         root_dir = c.get().root_dir(fname) or vim.loop.cwd(),
         on_init = on_init,
         on_exit = on_exit,
-        cmd = c.get().cmd,
+        cmd = should_patch_rpc and c.get().cmd -- pass command so that we can handle it in our patched rpc.start
+            or require("null-ls.rpc").start, -- pass callback to create rpc client
         filetypes = require("null-ls.sources").get_filetypes(),
         flags = { debounce_text_changes = c.get().debounce },
         on_attach = vim.schedule_wrap(function(_, bufnr)
             if bufnr == api.nvim_get_current_buf() then
                 M.setup_buffer(bufnr)
             elseif api.nvim_buf_is_valid(bufnr) then
-                vim.cmd(
-                    string.format(
-                        [[autocmd BufEnter <buffer=%d> ++once unsilent lua require("null-ls.client").setup_buffer(%d)]],
-                        bufnr,
-                        bufnr
-                    )
-                )
+                api.nvim_create_autocmd("BufEnter", {
+                    buffer = bufnr,
+                    once = true,
+                    callback = function()
+                        M.setup_buffer(bufnr)
+                    end,
+                })
             end
         end),
     }
@@ -179,19 +197,24 @@ M.on_source_change = vim.schedule_wrap(function()
                 s.register_conditional_sources()
             end
         else
-            vim.cmd(
-                string.format(
-                    [[autocmd BufEnter <buffer=%d> ++once unsilent lua require("null-ls.client").retry_add(%d)]],
-                    bufnr,
-                    bufnr
-                )
-            )
+            api.nvim_create_autocmd("BufEnter", {
+                buffer = bufnr,
+                once = true,
+                callback = function()
+                    M.retry_add(bufnr)
+                end,
+            })
         end
     end)
 
     -- if conditional sources remain, check on next (named) buffer read event
     if s.has_conditional_sources() then
-        vim.cmd([[autocmd BufRead * ++once unsilent lua require("null-ls.state").register_conditional_sources()]])
+        api.nvim_create_autocmd("BufRead", {
+            once = true,
+            callback = function()
+                s.register_conditional_sources()
+            end,
+        })
     end
 end)
 

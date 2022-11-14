@@ -8,8 +8,21 @@ local api = vim.api
 
 local namespaces = {}
 local get_namespace = function(id)
-    namespaces[id] = namespaces[id] or api.nvim_create_namespace("NULL_LS_SOURCE_" .. id)
-    return namespaces[id]
+    if namespaces[id] then
+        return namespaces[id]
+    end
+
+    local namespace = api.nvim_create_namespace("NULL_LS_SOURCE_" .. id)
+
+    local source = require("null-ls.sources").get({ id = id })[1]
+    local diagnostic_config = source and source.generator.opts and source.generator.opts.diagnostic_config
+        or c.get().diagnostic_config
+    if diagnostic_config then
+        vim.diagnostic.config(diagnostic_config, namespace)
+    end
+
+    namespaces[id] = namespace
+    return namespace
 end
 
 local M = {}
@@ -138,7 +151,6 @@ M.handler = function(original_params)
     if method == methods.lsp.DID_CLOSE then
         changedticks_by_uri[uri] = nil
         s.clear_cache(uri)
-        s.clear_commands(bufnr)
         return
     end
 
@@ -167,7 +179,7 @@ M.handler = function(original_params)
             end
             local source_id, multiple_files = generator.source_id, generator.multiple_files
             log:trace("received diagnostics from source " .. source_id)
-            log:trace(diagnostics)
+            log:trace(vim.inspect(diagnostics))
 
             if get_last_changedtick(uri, method) > changedtick then
                 log:debug("buffer changed; ignoring received diagnostics")

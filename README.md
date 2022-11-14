@@ -1,3 +1,10 @@
+<!-- markdownlint-configure-file
+{
+  "line-length": false,
+  "no-inline-html": false
+}
+-->
+
 # null-ls.nvim
 
 Use Neovim as a language server to inject LSP diagnostics, code actions, and
@@ -24,9 +31,10 @@ for external processes.
 null-ls is in **beta status**. Please see below for steps to follow if something
 doesn't work the way you expect (or doesn't work at all).
 
-At the moment, null-is is compatible with Neovim 0.6.1 (stable) and 0.7 (head),
-but some features and performance improvements are exclusive to the latest
-version.
+null-ls is developed on and tested against the latest stable version of Neovim.
+Support for versions built from `HEAD` is provided on a best-effort basis, and
+users are encouraged to contribute fixes to any issues exclusive to these
+versions.
 
 ## Features
 
@@ -64,11 +72,13 @@ To get started, you must set up null-ls and register at least one source. See
 null-ls.
 
 ```lua
-require("null-ls").setup({
+local null_ls = require("null-ls")
+
+null_ls.setup({
     sources = {
-        require("null-ls").builtins.formatting.stylua,
-        require("null-ls").builtins.diagnostics.eslint,
-        require("null-ls").builtins.completion.spell,
+        null_ls.builtins.formatting.stylua,
+        null_ls.builtins.diagnostics.eslint,
+        null_ls.builtins.completion.spell,
     },
 })
 ```
@@ -94,7 +104,6 @@ warnings.
 
 ```lua
 local null_ls = require("null-ls")
-local api = vim.api
 
 local no_really = {
     method = null_ls.methods.DIAGNOSTICS,
@@ -112,10 +121,10 @@ local no_really = {
                     table.insert(diagnostics, {
                         row = i,
                         col = col,
-                        end_col = end_col,
+                        end_col = end_col + 1,
                         source = "no-really",
                         message = "Don't use 'really!'",
-                        severity = 2,
+                        severity = vim.diagnostic.severity.WARN,
                     })
                 end
             end
@@ -154,9 +163,9 @@ local markdownlint = {
             local success = code <= 1
 
             if not success then
-              -- can be noisy for things that run often (e.g. diagnostics), but can
-              -- be useful for things that run on demand (e.g. formatting)
-              print(stderr)
+                -- can be noisy for things that run often (e.g. diagnostics), but can
+                -- be useful for things that run on demand (e.g. formatting)
+                print(stderr)
             end
 
             return success
@@ -190,9 +199,10 @@ plugin before sending anything upstream.
 
 1. Make sure your configuration is in line with the latest version of this
    document.
-2. Enable debug mode (see below) and check the output of your source(s). If
-   the CLI program is not properly configured or is otherwise not running as
-   expected, that's an issue with the program, not null-ls.
+2. [Enable debug mode](#how-do-i-enable-debug-mode-and-get-debug-output) and
+   check the output of your source(s). If the CLI program is not properly
+   configured or is otherwise not running as expected, that's an issue with the
+   program, not null-ls.
 3. Check the documentation for available configuration options that might solve
    your issue.
 4. If you're having trouble configuring null-ls or want to know how to achieve a
@@ -201,6 +211,16 @@ plugin before sending anything upstream.
    feature, open an issue and provide the information requested in the issue
    template.
 
+### My `:checkhealth` output is wrong! What do I do?
+
+Checking whether a given command is executable is tricky, and null-ls' health
+check doesn't handle all cases. null-ls' internal command resolution is
+independent of its health check output, which is for informational purposes.
+
+If you're not sure whether a given command is running as expected,
+[enable debug mode](#how-do-i-enable-debug-mode-and-get-debug-output) and check
+your log.
+
 ### How do I format files?
 
 null-ls formatters run when you call `vim.lsp.buf.formatting()` or
@@ -208,39 +228,23 @@ null-ls formatters run when you call `vim.lsp.buf.formatting()` or
 formatting by visually selecting part of the buffer and calling
 `vim.lsp.buf.range_formatting()`.
 
-### How do I stop Neovim from asking me which server I want to use for formatting?
-
-See [this wiki page](https://github.com/jose-elias-alvarez/null-ls.nvim/wiki/Avoiding-LSP-formatting-conflicts).
+On 0.8, you should use `vim.lsp.buf.format` (see the help file for usage
+instructions).
 
 ### How do I format files on save?
 
-See the following snippet:
+See
+[this wiki page](https://github.com/jose-elias-alvarez/null-ls.nvim/wiki/Formatting-on-save).
 
-```lua
-require("null-ls").setup({
-    -- you can reuse a shared lspconfig on_attach callback here
-    on_attach = function(client)
-        if client.resolved_capabilities.document_formatting then
-            vim.cmd([[
-            augroup LspFormatting
-                autocmd! * <buffer>
-                autocmd BufWritePre <buffer> lua vim.lsp.buf.formatting_sync()
-            augroup END
-            ]])
-        end
-    end,
-})
-```
+### How do I stop Neovim from asking me which server I want to use for formatting?
 
-You can also set up async formatting, as described on [this wiki
-page](https://github.com/jose-elias-alvarez/null-ls.nvim/wiki/Async-formatting).
-Please read the Caveats section there to understand the meaning of (and
-drawbacks of) async formatting.
+See
+[this wiki page](https://github.com/jose-elias-alvarez/null-ls.nvim/wiki/Avoiding-LSP-formatting-conflicts).
 
 ### How do I view project-level diagnostics?
 
-For a built-in solution, use `:lua vim.diagnostic.setqflist()`. You can also
-use a plugin like [trouble.nvim](https://github.com/folke/trouble.nvim).
+For a built-in solution, use `:lua vim.diagnostic.setqflist()`. You can also use
+a plugin like [trouble.nvim](https://github.com/folke/trouble.nvim).
 
 ### How do I enable debug mode and get debug output?
 
@@ -248,7 +252,7 @@ use a plugin like [trouble.nvim](https://github.com/folke/trouble.nvim).
 
    ```lua
    require("null-ls").setup({
-       debug = true
+       debug = true,
    })
    ```
 
@@ -265,8 +269,7 @@ possible, so it should work seamlessly with most LSP-related plugins. If you run
 into problems, please try to determine which plugin is causing them and open an
 issue.
 
-[This wiki
-page](https://github.com/jose-elias-alvarez/null-ls.nvim/wiki/Compatibility-with-other-plugins)
+[This wiki page](https://github.com/jose-elias-alvarez/null-ls.nvim/wiki/Compatibility-with-other-plugins)
 mentions plugins that require specific configuration options / tweaks to work
 with null-ls.
 
@@ -284,16 +287,18 @@ memory without any external processes, in most cases it should run faster than
 similar solutions. If you notice that performance is worse with null-ls than
 with an alternative, please open an issue!
 
-### I am seeing a `vim.lsp.buf.formatting_sync: timeout` error message
+### I am seeing a formatting `timeout` error message
 
-This issue occurs when a formatter takes longer than the default timeout value
-of the `formatting_sync` function. This is an automatic mechanism and controlled
-by Neovim. You might want to increase the timeout in your `formatting_sync`
-call:
+This issue occurs when a formatter takes longer than the default timeout value.
+This is an automatic mechanism and controlled by Neovim. You might want to
+increase the timeout in your call:
 
 ```lua
--- increase timeout to 2 seconds
-vim.lsp.buf.formatting_sync(nil, 2000)
+-- 0.7
+vim.lsp.buf.formatting_sync(nil, 2000) -- 2 seconds
+
+-- 0.8
+vim.lsp.buf.format({ timeout_ms = 2000 })
 ```
 
 ## Tests
@@ -317,9 +322,12 @@ All tests expect the latest Neovim master.
 - [formatter.nvim](https://github.com/mhartington/formatter.nvim): a Lua plugin
   that (surprise) focuses on formatting.
 
+- [hover.nvim](https://github.com/lewis6991/hover.nvim): Hover plugin framework
+  for Neovim.
+
 ## Sponsors
 
 Thanks to everyone who sponsors my projects and makes continued development /
 maintenance possible!
 
-<!-- sponsors --><a href="https://github.com/yutkat"><img src="https://github.com/yutkat.png" width="60px" alt="" /></a><a href="https://github.com/da-moon"><img src="https://github.com/da-moon.png" width="60px" alt="" /></a><a href="https://github.com/hituzi-no-sippo"><img src="https://github.com/hituzi-no-sippo.png" width="60px" alt="" /></a><!-- sponsors -->
+<!-- sponsors --><a href="https://github.com/hituzi-no-sippo"><img src="https://github.com/hituzi-no-sippo.png" width="60px" alt="" /></a><a href="https://github.com/sbc64"><img src="https://github.com/sbc64.png" width="60px" alt="" /></a><a href="https://github.com/chase"><img src="https://github.com/chase.png" width="60px" alt="" /></a><a href="https://github.com/williamboman"><img src="https://github.com/williamboman.png" width="60px" alt="" /></a><!-- sponsors -->
