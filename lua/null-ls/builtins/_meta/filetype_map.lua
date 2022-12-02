@@ -343,7 +343,7 @@ return {
   },
   sh = {
     code_actions = { "shellcheck" },
-    diagnostics = { "shellcheck" },
+    diagnostics = { "dotenv_linter", "shellcheck" },
     formatting = { "beautysh", "shellharden", "shfmt" },
     hover = { "printenv" }
   },
@@ -420,7 +420,7 @@ return {
   },
   xml = {
     diagnostics = { "tidy" },
-    formatting = { "tidy", "xmllint" }
+    formatting = { "tidy", "xmlformat", "xmllint" }
   },
   yaml = {
     diagnostics = { "actionlint", "cfn_lint", "spectral", "yamllint" },
