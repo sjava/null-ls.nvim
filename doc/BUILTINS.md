@@ -298,7 +298,7 @@ local sources = { null_ls.builtins.diagnostics.actionlint }
 - Filetypes: `{ "yaml" }`
 - Method: `diagnostics`
 - Command: `actionlint`
-- Args: `{ "-no-color", "-format", "{{json .}}", "-" }`
+- Args: dynamically resolved (see [source](https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/diagnostics/actionlint.lua))
 
 ### [alex](https://github.com/get-alex/alex)
 
@@ -2586,6 +2586,48 @@ local sources = { null_ls.builtins.formatting.elm_format }
 - Method: `formatting`
 - Command: `elm-format`
 - Args: `{ "--stdin" }`
+
+### [emacs_scheme_mode](https://www.gnu.org/savannah-checkouts/gnu/emacs/emacs.html)
+
+An extensible, customizable, free/libre text editor — and more. Basically, using emacs in batch mode to format scheme files.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.emacs_scheme_mode }
+```
+
+#### Defaults
+
+- Filetypes: `{ "scheme", "scheme.guile" }`
+- Method: `formatting`
+- Command: `emacs`
+- Args: dynamically resolved (see [source](https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/formatting/emacs_scheme_mode.lua))
+
+#### Notes
+
+- Adjust the expression evaluated with the `--eval` flag to change settings within emacs.
+
+### [emacs_vhdl_mode](https://guest.iis.ee.ethz.ch/~zimmi/emacs/vhdl-mode.html)
+
+VHDL Mode is an Emacs major mode for editing VHDL code. Basically, using emacs in batch mode to format VHDL files.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.emacs_vhdl_mode }
+```
+
+#### Defaults
+
+- Filetypes: `{ "vhdl" }`
+- Method: `formatting`
+- Command: `emacs`
+- Args: dynamically resolved (see [source](https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/formatting/emacs_vhdl_mode.lua))
+
+#### Notes
+
+- Adjust the expression evaluated with the `--eval` flag to change settings within emacs.
 
 ### [erb_lint](https://github.com/Shopify/erb-lint)
 
