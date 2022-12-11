@@ -101,6 +101,22 @@ local sources = { null_ls.builtins.code_actions.gitsigns }
 - Filetypes: `{}`
 - Method: `code_action`
 
+#### Config
+
+##### `filter_actions` (function)
+
+Callback to filter out unwanted actions.
+
+```lua
+local gitsigns = null_ls.builtins.code_actions.gitsigns.with({
+    config = {
+        filter_actions = function(title)
+            return title:lower():match("blame") == nil -- filter out blame actions
+        end,
+    },
+})
+```
+
 ### [ltrs](https://github.com/jeertmans/languagetool-rust)
 
 LanguageTool-Rust (LTRS) is both an executable and a Rust library that aims to provide correct and safe bindings for the LanguageTool API.
@@ -912,7 +928,7 @@ local sources = { null_ls.builtins.diagnostics.golangci_lint }
 - Filetypes: `{ "go" }`
 - Method: `diagnostics_on_save`
 - Command: `golangci-lint`
-- Args: `{ "run", "--fix=false", "--fast", "--out-format=json", "$DIRNAME", "--path-prefix", "$ROOT" }`
+- Args: `{ "run", "--fix=false", "--fast", "--out-format=json", "--path-prefix", "$ROOT" }`
 
 ### [hadolint](https://github.com/hadolint/hadolint)
 
@@ -3453,6 +3469,27 @@ local sources = { null_ls.builtins.formatting.prettier_d_slim }
 
 - May not work on some filetypes.
 - `prettierd` is more stable and recommended.
+
+### [prettier_eslint](https://github.com/prettier/prettier-eslint-cli)
+
+CLI for [prettier-eslint](https://github.com/prettier/prettier-eslint)
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.prettier_eslint }
+```
+
+#### Defaults
+
+- Filetypes: `{ "javascript", "javascriptreact", "typescript", "typescriptreact", "vue", "css", "scss", "less", "html", "json", "jsonc", "yaml", "markdown", "markdown.mdx", "graphql", "handlebars" }`
+- Method: `formatting`
+- Command: `prettier-eslint`
+- Args: `{ "--stdin", "--stdin-filepath", "$FILENAME" }`
+
+#### Notes
+
+- Known Issues: https://github.com/idahogurl/vs-code-prettier-eslint/issues/72#issuecomment-1247516987
 
 ### [prettier_standard](https://github.com/sheerun/prettier-standard)
 
