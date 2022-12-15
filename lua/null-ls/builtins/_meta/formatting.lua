@@ -10,6 +10,9 @@ return {
   astyle = {
     filetypes = { "arduino", "c", "cpp", "cs", "java" }
   },
+  autoflake = {
+    filetypes = { "python" }
+  },
   autopep8 = {
     filetypes = { "python" }
   },
@@ -335,6 +338,9 @@ return {
     filetypes = { "elixir", "surface" }
   },
   swiftformat = {
+    filetypes = { "swift" }
+  },
+  swiftlint = {
     filetypes = { "swift" }
   },
   taplo = {
