@@ -141,7 +141,7 @@ return {
     diagnostics = { "glslc" }
   },
   go = {
-    code_actions = { "refactoring" },
+    code_actions = { "gomodifytags", "refactoring" },
     diagnostics = { "golangci_lint", "revive", "semgrep", "staticcheck" },
     formatting = { "gofmt", "gofumpt", "goimports", "goimports_reviser", "golines" }
   },
@@ -407,12 +407,12 @@ return {
   typescript = {
     code_actions = { "eslint", "eslint_d", "refactoring", "xo" },
     diagnostics = { "eslint", "eslint_d", "semgrep", "tsc", "xo" },
-    formatting = { "deno_fmt", "dprint", "eslint", "eslint_d", "prettier", "prettier_d_slim", "prettier_eslint", "prettierd", "rome", "rustywind" }
+    formatting = { "deno_fmt", "dprint", "eslint", "eslint_d", "prettier", "prettier_d_slim", "prettier_eslint", "prettierd", "rome", "rustywind", "standardts" }
   },
   typescriptreact = {
     code_actions = { "eslint", "eslint_d", "xo" },
     diagnostics = { "eslint", "eslint_d", "semgrep", "tsc", "xo" },
-    formatting = { "deno_fmt", "dprint", "eslint", "eslint_d", "prettier", "prettier_d_slim", "prettier_eslint", "prettierd", "rome", "rustywind" }
+    formatting = { "deno_fmt", "dprint", "eslint", "eslint_d", "prettier", "prettier_d_slim", "prettier_eslint", "prettierd", "rome", "rustywind", "standardts" }
   },
   verilog = {
     formatting = { "verible_verilog_format" }
