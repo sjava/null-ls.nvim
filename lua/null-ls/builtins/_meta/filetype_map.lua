@@ -48,7 +48,7 @@ return {
     formatting = { "cmake_format", "gersemi" }
   },
   cpp = {
-    diagnostics = { "clang_check", "cppcheck", "cpplint", "gccdiag" },
+    diagnostics = { "clang_check", "clazy", "cppcheck", "cpplint", "gccdiag" },
     formatting = { "astyle", "clang_format", "uncrustify" }
   },
   crystal = {
@@ -161,7 +161,7 @@ return {
     formatting = { "brittany", "fourmolu", "stylish_haskell" }
   },
   hcl = {
-    formatting = { "packer" }
+    formatting = { "hclfmt", "packer" }
   },
   html = {
     diagnostics = { "tidy" },

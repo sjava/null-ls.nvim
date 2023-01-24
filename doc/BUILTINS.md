@@ -519,6 +519,37 @@ local sources = { null_ls.builtins.diagnostics.clang_check }
 
 - `clang-check` will be run only when files are saved to disk, so that `compile_commands.json` files can be used. It is recommended to use this linter in combination with `compile_commands.json` files.
 
+### [clazy](https://github.com/KDE/clazy)
+
+Qt-oriented static code analyzer based on the Clang framework
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.diagnostics.clazy }
+```
+
+#### Defaults
+
+- Filetypes: `{ "cpp" }`
+- Method: `diagnostics_on_save`
+- Command: `clazy-standalone`
+- Args: `{ "--ignore-included-files", "--header-filter=$ROOT/.*", "$FILENAME" }`
+
+#### Notes
+
+- `clazy` needs a compilation database (`compile_commands.json`) to work. By default `clazy` will search for a compilation database in all parent folders of the input file.
+- If the compilation database is not in a parent folder, the `-p` option can be used to point to the corresponding folder (e.g. the projects build directory):
+```lua
+local sources = {
+    null_ls.builtins.diagnostics.clazy.with({
+        extra_args = { "-p=$ROOT/build" },
+    }),
+}
+```
+- Alternatively, `compile_commands.json` can be linked into the project's root directory. For more information see https://clang.llvm.org/docs/HowToSetupToolingForLLVM.html
+- `clazy` will be run only when files are saved to disk, so that `compile_commands.json` can be used.
+
 ### [clj_kondo](https://github.com/clj-kondo/clj-kondo)
 
 A linter for clojure code that sparks joy
@@ -730,7 +761,7 @@ local sources = { null_ls.builtins.diagnostics.djlint }
 - Filetypes: `{ "django", "jinja.html", "htmldjango" }`
 - Method: `diagnostics`
 - Command: `djlint`
-- Args: `{ "$FILENAME" }`
+- Args: `{ "--quiet", "-" }`
 
 ### [dotenv_linter](https://github.com/dotenv-linter/dotenv-linter)
 
@@ -3045,6 +3076,22 @@ local sources = { null_ls.builtins.formatting.google_java_format }
 - Command: `google-java-format`
 - Args: `{ "-" }`
 
+### [hclfmt](https://github.com/fatih/hclfmt)
+
+Formatter for HCL configuration files
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.hclfmt }
+```
+
+#### Defaults
+
+- Filetypes: `{ "hcl" }`
+- Method: `formatting`
+- Command: `hclfmt`
+
 ### [isort](https://github.com/PyCQA/isort)
 
 Python utility / library to sort imports alphabetically and automatically separate them into sections and by type.
@@ -3514,7 +3561,7 @@ local sources = { null_ls.builtins.formatting.prettier }
 
 #### Notes
 
-- Supports more filetypes such as [Svelte](https://github.com/sveltejs/prettier-plugin-svelte) and [TOML](https://github.com/bd82/toml-tools/tree/master/packages/prettier-plugin-toml) via plugins. These filetypes are not enabled by default, but you can follow the instructions [here](#filetypes) to define your own list of filetypes.
+- Supports more filetypes such as [Svelte](https://github.com/sveltejs/prettier-plugin-svelte) and [TOML](https://github.com/bd82/toml-tools/tree/master/packages/prettier-plugin-toml) via plugins. These filetypes are not enabled by default, but you can follow the instructions [here](BUILTIN_CONFIG.md#filetypes) to define your own list of filetypes.
 - To increase speed, you may want to try [prettierd](https://github.com/fsouza/prettierd). You can also set up [eslint-plugin-prettier](https://github.com/prettier/eslint-plugin-prettier) and format via [eslint_d](https://github.com/mantoni/eslint_d.js/).
 
 ### [prettierd](https://github.com/fsouza/prettierd)
@@ -3530,9 +3577,9 @@ local sources = { null_ls.builtins.formatting.prettierd }
 #### Defaults
 
 - Filetypes: `{ "javascript", "javascriptreact", "typescript", "typescriptreact", "vue", "css", "scss", "less", "html", "json", "jsonc", "yaml", "markdown", "markdown.mdx", "graphql", "handlebars" }`
-- Method: `formatting`
+- Methods: `formatting, range_formatting`
 - Command: `prettierd`
-- Args: `{ "$FILENAME" }`
+- Args: dynamically resolved (see [source](https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/formatting/prettierd.lua))
 
 ### [prettier_d_slim](https://github.com/mikew/prettier_d_slim)
 
