@@ -794,7 +794,7 @@ local sources = { null_ls.builtins.diagnostics.editorconfig_checker }
 
 - Filetypes: `{}`
 - Method: `diagnostics`
-- Command: `ec`
+- Command: `editorconfig-checker`
 - Args: `{ "-no-color", "$FILENAME" }`
 
 ### [erb_lint](https://github.com/Shopify/erb-lint)
@@ -979,6 +979,23 @@ local sources = { null_ls.builtins.diagnostics.golangci_lint }
 - Method: `diagnostics_on_save`
 - Command: `golangci-lint`
 - Args: `{ "run", "--fix=false", "--out-format=json", "--path-prefix", "$ROOT" }`
+
+### [gospel](https://github.com/kortschak/gospel)
+
+misspelled word linter for Go comments, string literals and embedded files
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.diagnostics.gospel }
+```
+
+#### Defaults
+
+- Filetypes: `{ "go" }`
+- Method: `diagnostics`
+- Command: `gospel`
+- Args: `{ "$DIRNAME" }`
 
 ### [hadolint](https://github.com/hadolint/hadolint)
 
