@@ -106,7 +106,7 @@ return {
   },
   eruby = {
     diagnostics = { "erb_lint" },
-    formatting = { "erb_lint" }
+    formatting = { "erb_format", "erb_lint" }
   },
   fennel = {
     formatting = { "fnlfmt" }
@@ -377,6 +377,7 @@ return {
     formatting = { "swiftformat", "swiftlint" }
   },
   systemverilog = {
+    diagnostics = { "verilator" },
     formatting = { "verible_verilog_format" }
   },
   teal = {
@@ -419,6 +420,7 @@ return {
     formatting = { "deno_fmt", "dprint", "eslint", "eslint_d", "prettier", "prettier_d_slim", "prettier_eslint", "prettierd", "rome", "rustywind", "standardts" }
   },
   verilog = {
+    diagnostics = { "verilator" },
     formatting = { "verible_verilog_format" }
   },
   vhdl = {

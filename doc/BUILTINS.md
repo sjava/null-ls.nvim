@@ -2087,6 +2087,23 @@ local sources = { null_ls.builtins.diagnostics.vale }
 
 - vale does not include a syntax by itself, so you probably need to grab a `vale.ini` (at `~/.vale.ini`) and a StylesPath (somewhere, pointed from `vale.ini`) from [the list of configurations](https://docs.errata.ai/vale/about#open-source-configurations).
 
+### [verilator](https://www.veripool.org/verilator/)
+
+Verilog and SystemVerilog linter power by Verilator
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.diagnostics.verilator }
+```
+
+#### Defaults
+
+- Filetypes: `{ "verilog", "systemverilog" }`
+- Method: `diagnostics`
+- Command: `verilator`
+- Args: `{ "-lint-only", "$FILENAME" }`
+
 ### [vint](https://github.com/Vimjas/vint)
 
 Linter for Vimscript.
@@ -2778,6 +2795,23 @@ local sources = { null_ls.builtins.formatting.emacs_vhdl_mode }
 #### Notes
 
 - Adjust the expression evaluated with the `--eval` flag to change settings within emacs.
+
+### [erb_format](https://github.com/nebulab/erb-formatter)
+
+Format ERB files with speed and precision.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.erb_format }
+```
+
+#### Defaults
+
+- Filetypes: `{ "eruby" }`
+- Method: `formatting`
+- Command: `erb-format`
+- Args: `{ "--stdin" }`
 
 ### [erb_lint](https://github.com/Shopify/erb-lint)
 
