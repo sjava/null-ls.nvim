@@ -190,7 +190,7 @@ return {
     formatting = { "djhtml", "djlint" }
   },
   json = {
-    diagnostics = { "cfn_lint", "jsonlint", "spectral" },
+    diagnostics = { "cfn_lint", "jsonlint", "spectral", "vacuum" },
     formatting = { "deno_fmt", "dprint", "fixjson", "jq", "json_tool", "prettier", "prettier_d_slim", "prettier_eslint", "prettierd" }
   },
   jsonc = {
@@ -227,8 +227,8 @@ return {
   },
   markdown = {
     code_actions = { "ltrs", "proselint" },
-    diagnostics = { "alex", "ltrs", "ltrs", "markdownlint", "markdownlint_cli2", "mdl", "proselint", "vale", "write_good" },
-    formatting = { "cbfmt", "deno_fmt", "dprint", "markdown_toc", "markdownlint", "mdformat", "ocdc", "prettier", "prettier_d_slim", "prettier_eslint", "prettierd", "remark", "terrafmt" },
+    diagnostics = { "alex", "ltrs", "ltrs", "markdownlint", "markdownlint_cli2", "mdl", "proselint", "textlint", "vale", "write_good" },
+    formatting = { "cbfmt", "deno_fmt", "dprint", "markdown_toc", "markdownlint", "mdformat", "ocdc", "prettier", "prettier_d_slim", "prettier_eslint", "prettierd", "remark", "terrafmt", "textlint" },
     hover = { "dictionary" }
   },
   ["markdown.mdx"] = {
@@ -384,7 +384,7 @@ return {
     diagnostics = { "teal" }
   },
   terraform = {
-    diagnostics = { "tfsec" },
+    diagnostics = { "terraform_validate", "tfsec" },
     formatting = { "terraform_fmt" }
   },
   ["terraform-vars"] = {
@@ -408,6 +408,10 @@ return {
   },
   twig = {
     diagnostics = { "twigcs" }
+  },
+  txt = {
+    diagnostics = { "textlint" },
+    formatting = { "textlint" }
   },
   typescript = {
     code_actions = { "eslint", "eslint_d", "refactoring", "xo" },
@@ -439,7 +443,7 @@ return {
     formatting = { "tidy", "xmlformat", "xmllint" }
   },
   yaml = {
-    diagnostics = { "actionlint", "cfn_lint", "spectral", "yamllint" },
+    diagnostics = { "actionlint", "cfn_lint", "spectral", "vacuum", "yamllint" },
     formatting = { "prettier", "prettier_d_slim", "prettier_eslint", "prettierd", "yamlfmt" }
   },
   ["yaml.ansible"] = {

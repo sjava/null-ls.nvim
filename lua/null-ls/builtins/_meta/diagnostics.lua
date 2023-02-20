@@ -265,8 +265,11 @@ return {
   teal = {
     filetypes = { "teal" }
   },
+  terraform_validate = {
+    filetypes = { "terraform" }
+  },
   textlint = {
-    filetypes = {}
+    filetypes = { "txt", "markdown" }
   },
   tfsec = {
     filetypes = { "terraform" }
@@ -285,6 +288,9 @@ return {
   },
   twigcs = {
     filetypes = { "twig" }
+  },
+  vacuum = {
+    filetypes = { "yaml", "json" }
   },
   vale = {
     filetypes = { "markdown", "tex", "asciidoc" }

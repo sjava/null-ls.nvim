@@ -1951,6 +1951,23 @@ local sources = { null_ls.builtins.diagnostics.teal }
 - Command: `tl`
 - Args: `{ "check", "$FILENAME" }`
 
+### [terraform_validate](https://github.com/hashicorp/terraform)
+
+Terraform validate is is a subcommand of terraform to validate configuration files in a directory
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.diagnostics.terraform_validate }
+```
+
+#### Defaults
+
+- Filetypes: `{ "terraform" }`
+- Method: `diagnostics_on_save`
+- Command: `terraform`
+- Args: `{ "validate", "-json" }`
+
 ### [textlint](https://github.com/textlint/textlint)
 
 The pluggable linting tool for text and Markdown.
@@ -1963,7 +1980,7 @@ local sources = { null_ls.builtins.diagnostics.textlint }
 
 #### Defaults
 
-- Filetypes: `{}`
+- Filetypes: `{ "txt", "markdown" }`
 - Method: `diagnostics`
 - Command: `textlint`
 - Args: `{ "-f", "json", "--stdin", "--stdin-filename", "$FILENAME" }`
@@ -2065,6 +2082,23 @@ local sources = { null_ls.builtins.diagnostics.twigcs }
 - Method: `diagnostics`
 - Command: `twigcs`
 - Args: `{ "--reporter", "json", "$FILENAME" }`
+
+### [vacuum](https://quobix.com/vacuum)
+
+The world’s fastest and most scalable OpenAPI linter.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.diagnostics.vacuum }
+```
+
+#### Defaults
+
+- Filetypes: `{ "yaml", "json" }`
+- Method: `diagnostics`
+- Command: `vacuum`
+- Args: `{ "spectral-report", "--stdin", "--stdout" }`
 
 ### [vale](https://docs.errata.ai/vale/about)
 
@@ -4362,7 +4396,7 @@ local sources = { null_ls.builtins.formatting.textlint }
 
 #### Defaults
 
-- Filetypes: `{}`
+- Filetypes: `{ "txt", "markdown" }`
 - Method: `formatting`
 - Command: `textlint`
 - Args: `{ "--fix", "$FILENAME" }`
