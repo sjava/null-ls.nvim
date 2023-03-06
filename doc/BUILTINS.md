@@ -1222,6 +1222,23 @@ local sources = { null_ls.builtins.diagnostics.mypy }
 - Command: `mypy`
 - Args: dynamically resolved (see [source](https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/diagnostics/mypy.lua))
 
+### [npm_groovy_lint](https://github.com/nvuillam/npm-groovy-lint)
+
+Lint, format and auto-fix Groovy, Jenkinsfile, and Gradle files.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.diagnostics.npm_groovy_lint }
+```
+
+#### Defaults
+
+- Filetypes: `{ "groovy", "java", "Jenkinsfile" }`
+- Method: `diagnostics`
+- Command: `npm-groovy-lint`
+- Args: `{ "-o", "json", "-" }`
+
 ### [opacheck](https://www.openpolicyagent.org/docs/latest/cli/#opa-check)
 
 Check Rego source files for parse and compilation errors.
@@ -2136,7 +2153,7 @@ local sources = { null_ls.builtins.diagnostics.verilator }
 - Filetypes: `{ "verilog", "systemverilog" }`
 - Method: `diagnostics`
 - Command: `verilator`
-- Args: `{ "-lint-only", "$FILENAME" }`
+- Args: `{ "-lint-only", "-Wno-fatal", "$FILENAME" }`
 
 ### [vint](https://github.com/Vimjas/vint)
 
@@ -2623,7 +2640,7 @@ local sources = { null_ls.builtins.formatting.crystal_format }
 - Filetypes: `{ "crystal" }`
 - Method: `formatting`
 - Command: `crystal`
-- Args: `{ "tool", "format" }`
+- Args: `{ "tool", "format", "-" }`
 
 ### [csharpier](https://csharpier.com/)
 
