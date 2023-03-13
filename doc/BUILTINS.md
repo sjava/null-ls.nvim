@@ -369,6 +369,23 @@ local sources = { null_ls.builtins.diagnostics.ansiblelint }
 - Command: `ansible-lint`
 - Args: `{ "-f", "codeclimate", "-q", "--nocolor", "$FILENAME" }`
 
+### [bslint](https://github.com/rokucommunity/bslint)
+
+A brighterscript CLI tool to lint your code without compiling your project.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.diagnostics.bslint }
+```
+
+#### Defaults
+
+- Filetypes: `{ "brs" }`
+- Method: `diagnostics`
+- Command: `bslint`
+- Args: `{ "--files", "$FILENAME" }`
+
 ### [buf](https://github.com/bufbuild/buf)
 
 A new way of working with Protocol Buffers.
@@ -2766,6 +2783,7 @@ local sources = { null_ls.builtins.formatting.djhtml }
 - Filetypes: `{ "django", "jinja.html", "htmldjango" }`
 - Method: `formatting`
 - Command: `djhtml`
+- Args: `{ "-" }`
 
 ### [djlint](https://github.com/Riverside-Healthcare/djLint)
 
@@ -3524,7 +3542,7 @@ local sources = { null_ls.builtins.formatting.ocamlformat }
 - Filetypes: `{ "ocaml" }`
 - Method: `formatting`
 - Command: `ocamlformat`
-- Args: `{ "--enable-outside-detected-project", "-" }`
+- Args: `{ "--enable-outside-detected-project", "--name", "$FILENAME", "-" }`
 
 ### [ocdc](https://github.com/mdwint/ocdc)
 
@@ -3627,7 +3645,7 @@ local sources = { null_ls.builtins.formatting.phpcbf }
 - Command: `phpcbf`
 - Args: `{ "-q", "--stdin-path=$FILENAME", "-" }`
 
-### [phpcsfixer](https://github.com/FriendsOfPhp/PHP-CS-Fixer)
+### [phpcsfixer](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer)
 
 Formatter for php files.
 
@@ -3849,6 +3867,23 @@ local sources = { null_ls.builtins.formatting.purs_tidy }
 
 - For installation, use npm: npm install -g purs-tidy
 
+### [pyflyby](https://github.com/deshaw/pyflyby)
+
+Pyflyby is a set of Python programming productivity tools, useful for auto-import libraries
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.pyflyby }
+```
+
+#### Defaults
+
+- Filetypes: `{ "python" }`
+- Method: `formatting`
+- Command: `tidy-imports`
+- Args: `{ "-n" }`
+
 ### [qmlformat](https://doc-snapshots.qt.io/qt6-dev/qtquick-tools-and-utilities.html#qmlformat)
 
 qmlformat is a tool that automatically formats QML files according to the QML Coding Conventions.
@@ -3996,7 +4031,7 @@ local sources = { null_ls.builtins.formatting.rubocop }
 - Filetypes: `{ "ruby" }`
 - Method: `formatting`
 - Command: `rubocop`
-- Args: `{ "--auto-correct", "-f", "quiet", "--stderr", "--stdin", "$FILENAME" }`
+- Args: `{ "-a", "-f", "quiet", "--stderr", "--stdin", "$FILENAME" }`
 
 ### [ruff](https://github.com/charliermarsh/ruff/)
 
@@ -4571,6 +4606,23 @@ local sources = { null_ls.builtins.formatting.xmllint }
 - Command: `xmllint`
 - Args: `{ "--format", "-" }`
 
+### [xq](https://github.com/sibprogrammer/xq)
+
+Command-line XML and HTML beautifier and content extractor
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.xq }
+```
+
+#### Defaults
+
+- Filetypes: `{ "xml" }`
+- Method: `formatting`
+- Command: `xq`
+- Args: `{ ".", "$FILENAME" }`
+
 ### [yamlfmt](https://github.com/google/yamlfmt)
 
 yamlfmt is an extensible command line tool or library to format yaml files.
@@ -4604,6 +4656,23 @@ local sources = { null_ls.builtins.formatting.yapf }
 - Methods: `formatting, range_formatting`
 - Command: `yapf`
 - Args: dynamically resolved (see [source](https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/lua/null-ls/builtins/formatting/yapf.lua))
+
+### [yq](https://github.com/mikefarah/yq)
+
+yq is a portable command-line YAML, JSON, XML, CSV and properties processor.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.yq }
+```
+
+#### Defaults
+
+- Filetypes: `{ "yml", "yaml" }`
+- Method: `formatting`
+- Command: `yq`
+- Args: `{ ".", "$FILENAME" }`
 
 ### [zigfmt](https://github.com/ziglang/zig)
 
