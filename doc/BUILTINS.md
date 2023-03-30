@@ -4050,6 +4050,27 @@ local sources = { null_ls.builtins.formatting.rubocop }
 - Command: `rubocop`
 - Args: `{ "-a", "-f", "quiet", "--stderr", "--stdin", "$FILENAME" }`
 
+### [rubyfmt](https://github.com/fables-tales/rubyfmt)
+
+Format your Ruby code!
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.rubyfmt }
+```
+
+#### Defaults
+
+- Filetypes: `{ "ruby" }`
+- Method: `formatting`
+- Command: `rubyfmt`
+- Args: `{}`
+
+#### Notes
+
+- Install to your PATH with `brew install rubyfmt`. Ensure you have the latest version.
+
 ### [ruff](https://github.com/charliermarsh/ruff/)
 
 An extremely fast Python linter, written in Rust.
