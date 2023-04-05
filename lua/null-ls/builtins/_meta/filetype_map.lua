@@ -146,7 +146,7 @@ return {
     diagnostics = { "glslc" }
   },
   go = {
-    code_actions = { "gomodifytags", "refactoring" },
+    code_actions = { "gomodifytags", "impl", "refactoring" },
     diagnostics = { "golangci_lint", "gospel", "revive", "semgrep", "staticcheck" },
     formatting = { "gofmt", "gofumpt", "goimports", "goimports_reviser", "golines" }
   },
@@ -333,7 +333,7 @@ return {
     diagnostics = { "rstcheck" }
   },
   ruby = {
-    diagnostics = { "rubocop", "semgrep", "standardrb" },
+    diagnostics = { "reek", "rubocop", "semgrep", "standardrb" },
     formatting = { "rubocop", "rubyfmt", "rufo", "standardrb" }
   },
   rust = {

@@ -136,6 +136,25 @@ local sources = { null_ls.builtins.code_actions.gomodifytags }
 
 - Requires installing the Go tree-sitter parser.
 
+### [impl](https://github.com/josharian/impl)
+
+impl generates method stubs for implementing an interface.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.code_actions.impl }
+```
+
+#### Defaults
+
+- Filetypes: `{ "go" }`
+- Method: `code_action`
+
+#### Notes
+
+- Requires installing the Go tree-sitter parser.
+
 ### [ltrs](https://github.com/jeertmans/languagetool-rust)
 
 LanguageTool-Rust (LTRS) is both an executable and a Rust library that aims to provide correct and safe bindings for the LanguageTool API.
@@ -1645,6 +1664,23 @@ local sources = { null_ls.builtins.diagnostics.qmllint }
 - Method: `diagnostics`
 - Command: `qmllint`
 - Args: `{ "$FILENAME" }`
+
+### [reek](https://github.com/troessner/reek)
+
+Code smell detector for Ruby
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.diagnostics.reek }
+```
+
+#### Defaults
+
+- Filetypes: `{ "ruby" }`
+- Method: `diagnostics`
+- Command: `reek`
+- Args: `{ "--format", "json", "--stdin-filename", "$FILENAME" }`
 
 ### [revive](https://revive.run/)
 
@@ -4267,9 +4303,9 @@ local sources = { null_ls.builtins.formatting.sqlfmt }
 #### Defaults
 
 - Filetypes: `{ "sql", "jinja" }`
-- Method: ``
+- Method: `formatting`
 - Command: `sqlfmt`
-- Args: `{}`
+- Args: `{ "$FILENAME" }`
 
 #### Notes
 
