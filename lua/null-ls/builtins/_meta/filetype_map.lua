@@ -126,6 +126,9 @@ return {
   fortran = {
     formatting = { "fprettify" }
   },
+  fsharp = {
+    formatting = { "fantomas" }
+  },
   gd = {
     formatting = { "gdformat" }
   },
@@ -361,6 +364,9 @@ return {
     diagnostics = { "dotenv_linter", "shellcheck" },
     formatting = { "beautysh", "shellharden", "shfmt" },
     hover = { "printenv" }
+  },
+  sml = {
+    formatting = { "smlfmt" }
   },
   solidity = {
     diagnostics = { "solhint" }

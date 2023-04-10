@@ -3028,6 +3028,23 @@ local sources = { null_ls.builtins.formatting.eslint_d }
 
 - Once spawned, the server will continue to run in the background. This is normal and not related to null-ls. You can stop it by running `eslint_d stop` from the command line.
 
+### [fantomas](https://github.com/fsprojects/fantomas)
+
+FSharp source code formatter.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.fantomas }
+```
+
+#### Defaults
+
+- Filetypes: `{ "fsharp" }`
+- Method: `formatting`
+- Command: `fantomas`
+- Args: `{ "$FILENAME" }`
+
 ### [fish_indent](https://fishshell.com/docs/current/cmds/fish_indent.html)
 
 Indent or otherwise prettify a piece of fish code.
@@ -4264,6 +4281,23 @@ local sources = { null_ls.builtins.formatting.shfmt }
 - Method: `formatting`
 - Command: `shfmt`
 - Args: `{ "-filename", "$FILENAME" }`
+
+### [smlfmt](https://github.com/shwestrick/smlfmt)
+
+A custom parser/auto-formatter for Standard ML
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.smlfmt }
+```
+
+#### Defaults
+
+- Filetypes: `{ "sml" }`
+- Method: `formatting`
+- Command: `smlfmt`
+- Args: `{ "--force", "$FILENAME" }`
 
 ### [sqlfluff](https://github.com/sqlfluff/sqlfluff)
 
