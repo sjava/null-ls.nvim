@@ -248,6 +248,21 @@ local sources = { null_ls.builtins.code_actions.statix }
 - Command: `statix`
 - Args: `{ "check", "--stdin", "--format=json" }`
 
+### [ts_node_action](https://github.com/CKolkey/ts-node-action)
+
+A framework for running functions on Tree-sitter nodes, and updating the buffer with the result.
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.code_actions.ts_node_action }
+```
+
+#### Defaults
+
+- Filetypes: `{}`
+- Method: `code_action`
+
 ### [xo](https://github.com/xojs/xo)
 
 ❤️ JavaScript/TypeScript linter (ESLint wrapper) with great defaults
@@ -2050,7 +2065,7 @@ local sources = { null_ls.builtins.diagnostics.terraform_validate }
 
 #### Defaults
 
-- Filetypes: `{ "terraform" }`
+- Filetypes: `{ "terraform", "tf", "terraform-vars" }`
 - Method: `diagnostics_on_save`
 - Command: `terraform`
 - Args: `{ "validate", "-json" }`
@@ -2084,7 +2099,7 @@ local sources = { null_ls.builtins.diagnostics.tfsec }
 
 #### Defaults
 
-- Filetypes: `{ "terraform" }`
+- Filetypes: `{ "terraform", "tf", "terraform-vars" }`
 - Method: `diagnostics_on_save`
 - Command: `tfsec`
 - Args: `{ "-s", "-f", "json", "$DIRNAME" }`
@@ -4513,6 +4528,23 @@ local sources = { null_ls.builtins.formatting.surface }
 - Method: `formatting`
 - Command: `mix`
 - Args: `{ "surface.format", "-" }`
+
+### [swift-format](https://github.com/apple/swift-format)
+
+Swift formatter from apple. Requires building from source with `swift build`
+
+#### Usage
+
+```lua
+local sources = { null_ls.builtins.formatting.swift-format }
+```
+
+#### Defaults
+
+- Filetypes: `{ "swift" }`
+- Method: `formatting`
+- Command: `swift-format`
+- Args: `{}`
 
 ### [swiftformat](https://github.com/nicklockwood/SwiftFormat)
 
